@@ -1,0 +1,8 @@
+--- 
+- hosts: all
+  tasks: 
+    - name: Install Homebrew 
+    - name: Install ZFS
+    - name: Install FUSE 
+    - name: Get Obuilder-FS 
+    - name: Get obuilder 

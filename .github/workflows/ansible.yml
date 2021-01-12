@@ -1,0 +1,50 @@
+# Mostly taken from https://github.com/geerlingguy/mac-dev-playbook/actions/runs/468043971/workflow 
+name: Ansible testing
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+jobs: 
+  lint: 
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: pip3 install yamllint ansible-lint
+
+      - name: Lint code.
+        run: |
+          yamllint .
+          ansible-lint
+  ansible:
+    name: Ansible setup
+    runs-on: macos-10.15
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v2
+      - name: Remove Homebrew 
+        run: | 
+          curl -sLO https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh
+          chmod +x ./uninstall.sh
+          sudo ./uninstall.sh --force
+          sudo rm -rf /usr/local/Homebrew
+          sudo rm -rf /usr/local/Caskroom
+          sudo rm -rf /usr/local/bin/brew
+      - name: Install ansible
+        run: sudo pip3 install ansible
+      - name: Copy in test configuration
+        run: | 
+          cp ./tests/hosts ./hosts
+      - name: Syntax checker 
+        run: ansible-playbook main.yml --syntax-check
+      - name: TODO
+        run: echo "More coming soon!"
