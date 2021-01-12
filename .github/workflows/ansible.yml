@@ -7,11 +7,11 @@ name: Ansible testing
     branches:
       - main
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+  ansible:
+    name: Ansible setup
+    runs-on: macos-10.15
     steps:
-      - name: Check out the codebase.
+      - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Python 3.
         uses: actions/setup-python@v2
@@ -28,16 +28,10 @@ jobs:
       - name: Install test dependencies.
         if: steps.cache.outputs.cache-hit != 'true'
         run: pip3 install -r ./tests/requirements.txt
-      - name: Lint code.
+      - name: Lint code
         run: |
           yamllint .
           ansible-lint
-  ansible:
-    name: Ansible setup
-    runs-on: macos-10.15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: Remove Homebrew
         run: ./.github/workflows/uninstall-homebrew.sh
       - name: Install ansible
