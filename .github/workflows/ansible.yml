@@ -17,8 +17,17 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
+      - name: Setup Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('./tests/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Install test dependencies.
-        run: pip3 install yamllint ansible-lint
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: pip3 install -r ./tests/requirements.txt
       - name: Lint code.
         run: |
           yamllint .
@@ -32,7 +41,8 @@ jobs:
       - name: Remove Homebrew
         run: ./.github/workflows/uninstall-homebrew.sh
       - name: Install ansible
-        run: sudo pip3 install ansible
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: sudo pip3 install -r ./tests/requirements.txt
       - name: Copy in test configuration
         run: |
           cp ./tests/hosts ./hosts
