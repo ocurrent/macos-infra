@@ -6,7 +6,7 @@
         path: /usr/local/Homebrew
         state: absent
 
-- hosts: all 
+- hosts: all
   name: Configure MacOS workers
   roles:
     - worker
