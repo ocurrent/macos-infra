@@ -27,7 +27,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install test dependencies.
         if: steps.cache.outputs.cache-hit != 'true'
-        run: pip install --user -r ./tests/requirements.txt
+        run: pip install -r ./tests/requirements.txt
       - name: Lint code
         run: |
           yamllint .
