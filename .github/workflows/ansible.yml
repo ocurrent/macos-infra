@@ -31,7 +31,6 @@ jobs:
       - name: Lint code
         run: |
           yamllint .
-          ansible-lint
       - name: Remove Homebrew
         run: ./.github/workflows/uninstall-homebrew.sh
       - name: Copy in test configuration
