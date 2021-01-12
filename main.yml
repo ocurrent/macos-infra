@@ -1,8 +1,7 @@
---- 
+---
 - hosts: all
-  tasks: 
-    - name: Install Homebrew 
-    - name: Install ZFS
-    - name: Install FUSE 
-    - name: Get Obuilder-FS 
-    - name: Get obuilder 
+  tasks:
+    - name: Homebrew Gone
+      file:
+        path: /usr/local/Homebrew
+        state: absent
