@@ -1,2 +1,2 @@
 #!/bin/bash
-./env/bin/yamllint .github roles main.yml tests
+./env/bin/yamllint .github roles main.yml tests requirements.yml
