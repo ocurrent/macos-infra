@@ -27,7 +27,6 @@ jobs:
       - name: Copy in test configuration
         run: |
           cp ./tests/hosts ./hosts
-          ansible-galaxy install -r requirements.yml -p ./roles
       - name: Syntax checker
         run: ansible-playbook main.yml --syntax-check
       - name: Run playbook
