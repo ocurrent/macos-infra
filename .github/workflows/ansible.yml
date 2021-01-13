@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install test dependencies
-        run: |  
+        run: |
           pip3 install yamllint ansible-lint
           sudo pip3 install ansible
       - name: Lint code

@@ -1,0 +1,1 @@
+./env/bin/yamllint .github roles main.yml tests
