@@ -1,6 +1,3 @@
 ---
 - name: Add OpenZFS on OSX
-  include: "./dmg.yml pkgName=OpenZFS_on_OS_X_1.9.4 \
-  pkg='OpenZFS\ on\ OS\ X\ 1.9.4\ Catalina'
-  dmgURL=https://openzfsonosx.org/w/images/6/6f/OpenZFS_on_OS_X_1.9.4.dmg \
-  target=/"
+  include: ./dmg.yml pkgName=OpenZFS_on_OS_X_1.9.4 pkg='OpenZFS on OS X 1.9.4 Catalina' dmgURL=https://openzfsonosx.org/w/images/6/6f/OpenZFS_on_OS_X_1.9.4.dmg target=/
