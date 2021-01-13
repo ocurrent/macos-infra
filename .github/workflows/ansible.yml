@@ -44,4 +44,6 @@ jobs:
         env:
           ANSIBLE_FORCE_COLOR: '1'
       - name: Packages Installed?
-        run: opam --version
+        run: |
+          opam --version
+          zfs --version
