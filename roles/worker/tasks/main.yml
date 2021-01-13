@@ -1,4 +1,10 @@
 ---
-- name: Add macFUSE
-  command: echo "FUSE"
-# include: ./dmg.yml pkgName=OpenZFS_on_OS_X_1.9.4 pkg='OpenZFS\ on\ OS\ X\ 1.9.4\ Catalina' dmgURL=https://openzfsonosx.org/w/images/6/6f/OpenZFS_on_OS_X_1.9.4.dmg target=/
+- name: Install opam-sysinstall
+  command: "opam pin add opam-sysintall git+https://github.com/patricoferris/opam-sysinstall"
+- name: Opam System Compilers Directory
+  become: true
+  file:
+    path: /ocaml
+    state: directory
+- name: Install a system compiler
+  command: opam sysinstall build --latest=1 --prefix /ocaml --jobs=4

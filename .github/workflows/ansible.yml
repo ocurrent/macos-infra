@@ -36,6 +36,7 @@ jobs:
         run: |
           cp ./tests/ansible.cfg ./ansible.cfg
           cp ./tests/inventory ./inventory
+          cp ./tests/default.config.yml ./default.config.yml
           ansible-galaxy install -r requirements.yml -p ./roles
       - name: Syntax checker
         run: ansible-playbook main.yml --syntax-check
@@ -46,4 +47,4 @@ jobs:
       - name: Packages Installed?
         run: |
           opam --version
-          zfs --version
+          ls /ocaml

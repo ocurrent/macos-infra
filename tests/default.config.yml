@@ -1,8 +1,6 @@
 ---
 homebrew_installed_packages:
   - opam
-  - openzfs
-  - macfuse
 
 homebrew_taps:
   - homebrew/core
