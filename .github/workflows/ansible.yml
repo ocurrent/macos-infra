@@ -22,7 +22,6 @@ jobs:
       - name: Lint code.
         run: |
           yamllint .
-          ansible-lint
   ansible:
     name: Ansible setup
     runs-on: macos-10.15
