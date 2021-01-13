@@ -9,4 +9,6 @@
 - hosts: all
   name: Configure MacOS workers
   roles:
-    - worker
+    - role: geerlingguy.homebrew
+      tags: ['homebrew']
+    - role: worker
