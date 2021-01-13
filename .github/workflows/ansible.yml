@@ -43,3 +43,5 @@ jobs:
         run: ansible-playbook main.yml
         env:
           ANSIBLE_FORCE_COLOR: '1'
+      - name: Packages Installed?
+        run: opam --version

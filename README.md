@@ -5,14 +5,15 @@ Ansible playbook for deploying infrastructure for MacOS for OCurrent workers and
 
 ## Setup
 
-If you use the virtual environment then you can install the test dependencies with `pip install -r ./tests/requirements.txt`. After that some good things to test are: 
+If you use the virtual environment then you can install the test dependencies with `pip install yamllint ansible-lint ansible`. After that some good things to test are: 
 
 ```sh
-$ ./env/bin/yamllint .github roles main.yml tests ./requirements.yml
+$ yamllint .github roles/worker roles/common main.yml tests requirements.yml
 ```
 
 And also: 
 
 ```sh
-$ ./env/bin/ansible-playbook main.yml --syntax-check
+$ ansible-galaxy install -r requirements.yml -p ./roles
+$ ansible-playbook main.yml --syntax-check
 ```

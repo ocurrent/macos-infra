@@ -7,6 +7,8 @@
         state: absent
 
 - hosts: all
+  vars_files:
+    - default.config.yml
   name: Configure MacOS workers
   roles:
     - role: geerlingguy.homebrew
