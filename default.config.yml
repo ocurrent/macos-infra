@@ -1,3 +1,8 @@
 ---
 homebrew_installed_packages:
   - opam
+  - openzfs
+
+homebrew_taps:
+  - homebrew/core
+  - homebrew/cask
