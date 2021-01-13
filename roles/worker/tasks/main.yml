@@ -1,4 +1,4 @@
 ---
-- name: Add Homebrew
-  shell:
-    cmd: echo "Hello World"
+- name: Add OpenZFS on OSX
+  include: "./dmg.yml appName=OpenZFS_on_OS_X_1.9.4 \
+  dmgURL=https://openzfsonosx.org/w/images/6/6f/OpenZFS_on_OS_X_1.9.4.dmg"
