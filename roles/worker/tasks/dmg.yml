@@ -5,7 +5,7 @@
 - name: Mount DMG
   command: hdiutil attach /tmp/{{ pkgName }}.dmg -nobrowse
 - name: Install PKG
-  become: yes
+  become: true
   shell: "installer -pkg /Volumes/{{ pkgName }}/{{ pkg }}.pkg \
   -target {{ target }}"
 - name: Unmount DMG
