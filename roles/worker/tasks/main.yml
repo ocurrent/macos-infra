@@ -9,7 +9,7 @@
   command: opam install opam-sysinstall --yes
 - name: Opam System Compilers Directory
   file:
-    path: /home/ocaml
+    path: /opt/ocaml
     state: directory
 - name: Install a system compiler
   command: opam exec -- opam sysinstall build --latest=1 --prefix=/ocaml --jobs=4
