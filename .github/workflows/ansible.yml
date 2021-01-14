@@ -36,10 +36,15 @@ jobs:
         run: |
           cp ./tests/ansible.cfg ./ansible.cfg
           cp ./tests/inventory ./inventory
+          cp ./tests/default.config.yml ./default.config.yml
           ansible-galaxy install -r requirements.yml -p ./roles
       - name: Syntax checker
         run: ansible-playbook main.yml --syntax-check
       - name: Run Playbook
-        run: ansible-playbook main.yml
+        run: ansible-playbook --become-user=root main.yml 
         env:
           ANSIBLE_FORCE_COLOR: '1'
+      - name: Packages Installed?
+        run: |
+          opam --version
+          ls ~/ocaml

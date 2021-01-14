@@ -1,4 +1,15 @@
 ---
-- name: Add Homebrew
-  shell:
-    cmd: echo "Hello World"
+- name: Initialise opam
+  command: opam init -y
+  register: opaminit
+- debug: msg="{{ opaminit }}"
+- name: Pin opam-sysinstall
+  command: "opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall --yes"
+- name: Install opam
+  command: opam install opam-sysinstall --yes
+- name: Opam System Compilers Directory
+  file:
+    path: "{{ ansible_env.HOME }}/ocaml"
+    state: directory
+- name: Install a system compiler
+  command: opam exec -- opam sysinstall build --latest=1 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=4
