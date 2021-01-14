@@ -1,6 +1,6 @@
 ---
 - name: Install opam-sysinstall
-  command: "opam pin add opam-sysintall git+https://github.com/patricoferris/opam-sysinstall"
+  command: "opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall"
 - name: Opam System Compilers Directory
   become: true
   file:
