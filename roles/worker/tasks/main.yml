@@ -6,7 +6,8 @@
 - name: Opam System Compilers Directory
   become: true
   file:
-    path: /ocaml
+    path: /opt/ocaml
     state: directory
 - name: Install a system compiler
+  become: true
   command: opam sysinstall build --latest=1 --prefix /ocaml --jobs=4
