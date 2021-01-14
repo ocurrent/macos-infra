@@ -1,15 +1,15 @@
 ---
 - name: Initialise opam
   command: opam init -y
+  register: opaminit
+- debug: msg="{{ opaminit }}"
 - name: Pin opam-sysinstall
   command: "opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall --yes"
 - name: Install opam
   command: opam install opam-sysinstall --yes
 - name: Opam System Compilers Directory
-  become: true
   file:
-    path: /opt/ocaml
+    path: /home/ocaml
     state: directory
 - name: Install a system compiler
-  become: true
   command: opam exec -- opam sysinstall build --latest=1 --prefix=/ocaml --jobs=4
