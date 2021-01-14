@@ -47,4 +47,4 @@ jobs:
       - name: Packages Installed?
         run: |
           opam --version
-          ls /ocaml
+          ls ~/ocaml
