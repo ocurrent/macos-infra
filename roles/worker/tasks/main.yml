@@ -1,4 +1,6 @@
 ---
+- name: Initialise opam
+  command: opam init -y
 - name: Install opam-sysinstall
   command: "opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall"
 - name: Opam System Compilers Directory
