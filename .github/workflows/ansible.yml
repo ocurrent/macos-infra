@@ -41,7 +41,7 @@ jobs:
       - name: Syntax checker
         run: ansible-playbook main.yml --syntax-check
       - name: Run Playbook
-        run: ansible-playbook main.yml --become-user
+        run: ansible-playbook --become-user=root main.yml 
         env:
           ANSIBLE_FORCE_COLOR: '1'
       - name: Packages Installed?
