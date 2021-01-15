@@ -1,6 +1,8 @@
 ---
 homebrew_installed_packages:
   - opam
+
+homebrew_cask_apps:
   - osxfuse
 
 homebrew_taps:
