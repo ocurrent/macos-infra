@@ -14,7 +14,7 @@
 - name: Install a system compiler
   command: opam exec -- opam sysinstall build --latest=1 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=4
 - name: Get OBuilder
-  command: "opam exec -- opam pin add git+https://github.com/patricoferris/obuilder#macos"
+  command: "opam exec -- opam pin add git+https://github.com/patricoferris/obuilder#macos --yes"
 - name: OBuilder
   command: opam exec -- obuilder version
   register: obuilderverion
