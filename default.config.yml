@@ -4,7 +4,6 @@ homebrew_installed_packages:
   - pkg-config
 
 homebrew_cask_apps:
-  - openzfs
   - osxfuse
 
 homebrew_taps:
