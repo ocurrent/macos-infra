@@ -28,10 +28,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Manpages Error for OpenZFS Fix
-        run: | 
-          sudo chown -R $(whoami) /usr/local/share/man/man8
-          chmod u+w /usr/local/share/man/man8
       - name: Remove Homebrew
         run: ./.github/workflows/uninstall-homebrew.sh
       - name: Install ansible
