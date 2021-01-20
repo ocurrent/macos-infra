@@ -19,3 +19,14 @@ And also:
 $ ansible-galaxy install -r requirements.yml -p ./roles
 $ ansible-playbook main.yml --syntax-check
 ```
+
+---
+
+### Installed World
+
+This ansible playbook does lots of things. The CI tests that it does the following: 
+
+  - From Homebrew it installs `opam`, `osxfuse` and `pkg-config`. 
+  - Via some shell-script incantations it installs `openzfs`. 
+  - It installs OCaml system compilers using `opam sysinstall`. 
+  - It installs `OCluster` the `Macos` version and `Obuilder-fs` for the FUSE hackery.

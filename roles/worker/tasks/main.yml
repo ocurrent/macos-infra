@@ -21,3 +21,11 @@
   command: opam exec -- obuilder version
   register: obuilderverion
 - debug: msg="{{ obuilderverion }}"
+- name: Get OBuilder-fs
+  command: "git clone https://github.com/patricoferris/obuilder-fs {{ ansible_env.HOME }}/obuilder-fs"
+- name: Install OBuilder-fs
+  command:
+    cmd: make
+    chdir: "{{ ansible_env.HOME }}/obuilder-fs"
+  register: obuilderfs
+- debug: msg="{{ obuilderverion }}"
