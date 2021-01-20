@@ -1,4 +1,6 @@
 ---
+- name: Install ZFS 
+  include: ./zfs.yml
 - name: Initialise opam
   command: opam init -y
   register: opaminit

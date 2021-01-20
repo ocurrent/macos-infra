@@ -9,3 +9,6 @@ homebrew_cask_apps:
 homebrew_taps:
   - homebrew/core
   - homebrew/cask
+
+homebrew_folders_additional:
+  - ./share/man/man8

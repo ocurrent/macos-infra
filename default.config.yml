@@ -4,9 +4,11 @@ homebrew_installed_packages:
   - pkg-config
 
 homebrew_cask_apps:
-  - openzfs
   - osxfuse
 
 homebrew_taps:
   - homebrew/core
   - homebrew/cask
+
+homebrew_folders_additional:
+  - /usr/local/share/man/man8
