@@ -27,5 +27,7 @@
   command:
     cmd: make
     chdir: "{{ ansible_env.HOME }}/obuilder-fs"
+- name: Print information
+  cmd: "{{ ansible_env.HOME }}/obuilder-fs/install/obuilderfs --help"
   register: obuilderfs
-- debug: msg="{{ obuilderverion }}"
+- debug: msg="{{ obuilderfs }}"
