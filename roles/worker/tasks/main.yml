@@ -1,6 +1,6 @@
 ---
 - name: Install ZFS 
-  include: ./zfs.yml
+  include_tasks: ./zfs.yml
 - name: Initialise opam
   command: opam init -y
   register: opaminit
@@ -28,6 +28,6 @@
     cmd: make
     chdir: "{{ ansible_env.HOME }}/obuilder-fs"
 - name: Print information
-  cmd: "{{ ansible_env.HOME }}/obuilder-fs/install/obuilderfs --help"
+  command: "{{ ansible_env.HOME }}/obuilder-fs/install/obuilderfs --help"
   register: obuilderfs
 - debug: msg="{{ obuilderfs }}"
