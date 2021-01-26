@@ -2,6 +2,10 @@
 homebrew_installed_packages:
   - opam
   - pkg-config
+  - capnp
+  - gmp 
+  - libev 
+  - lz4
 
 homebrew_cask_apps:
   - osxfuse
