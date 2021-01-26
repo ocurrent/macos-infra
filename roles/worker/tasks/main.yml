@@ -15,10 +15,14 @@
     state: directory
 - name: Install a system compiler
   command: opam exec -- opam sysinstall build --latest=1 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=4
-- name: Get OBuilder
-  command: "opam exec -- opam pin add git+https://github.com/patricoferris/obuilder#macos --yes"
-- name: OBuilder
-  command: opam exec -- obuilder version
+- name: Get opam-health-check
+  command: "git clone --branch macos --recursive https://github.com/patricoferris/opam-health-check.git {{ ansible_env.HOME }}/opam-health-check"
+- name: Pin and build everything 
+  command:
+    cmd: "opam pin add -y . && opam exec -- dune build @install"
+    chdir: "{{ ansible_env.HOME }}/opam-health-check"
+- name: OCluster Worker?
+  command: opam exec -- olcuster-worker --help=plain
   register: obuilderverion
 - debug: msg="{{ obuilderverion }}"
 - name: Get OBuilder-fs
