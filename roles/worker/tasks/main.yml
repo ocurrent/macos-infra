@@ -17,9 +17,13 @@
   command: opam exec -- opam sysinstall build --latest=1 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=4
 - name: Get opam-health-check
   command: "git clone --branch macos --recursive https://github.com/patricoferris/opam-health-check.git {{ ansible_env.HOME }}/opam-health-check"
-- name: Pin and build everything 
+- name: Pin
   command:
-    cmd: "opam pin add -y . && opam exec -- dune build @install"
+    cmd: "opam pin add -y ./"
+    chdir: "{{ ansible_env.HOME }}/opam-health-check"
+- name: Build and Install
+  command:
+    cmd: "opam exec -- dune build @install"
     chdir: "{{ ansible_env.HOME }}/opam-health-check"
 - name: OCluster Worker?
   command: opam exec -- olcuster-worker --help=plain
