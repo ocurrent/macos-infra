@@ -24,8 +24,8 @@
     - "opam pin add -yn ./ocluster"
     - "opam pin add -yn ./"
     - "opam install opam-depext -y"
-    - "opam depext -i ocluster"
-    - "opam install . --deps-only -y"
+    - "opam depext -iy ocluster"
+    - "opam install -y . --deps-only"
   args:
     chdir: "{{ ansible_env.HOME }}/opam-health-check"
 - name: Build and Install
