@@ -9,7 +9,7 @@
   command: opam install opam-sysinstall --yes
 - name: Opam System Compilers Directory
   file:
-    path: "/var/ocaml"
+    path: "{{ ansible_env.HOME }}/ocaml"
     state: directory
 - name: Install a system compiler
   command: opam exec -- opam sysinstall build --latest=4 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=8
