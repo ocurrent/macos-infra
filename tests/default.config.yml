@@ -3,12 +3,5 @@ homebrew_installed_packages:
   - opam
   - pkg-config
 
-homebrew_cask_apps:
-  - osxfuse
-
 homebrew_taps:
   - homebrew/core
-  - homebrew/cask
-
-homebrew_folders_additional:
-  - ./share/man/man8

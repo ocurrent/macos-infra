@@ -1,6 +1,4 @@
 ---
-- name: Install ZFS 
-  include: ./zfs.yml
 - name: Initialise opam
   command: opam init -y
   register: opaminit
@@ -11,13 +9,17 @@
   command: opam install opam-sysinstall --yes
 - name: Opam System Compilers Directory
   file:
-    path: "{{ ansible_env.HOME }}/ocaml"
+    path: "/var/ocaml"
     state: directory
 - name: Install a system compiler
-  command: opam exec -- opam sysinstall build --latest=1 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=4
-- name: Get OBuilder
-  command: "opam exec -- opam pin add git+https://github.com/patricoferris/obuilder#macos --yes"
-- name: OBuilder
-  command: opam exec -- obuilder version
-  register: obuilderverion
-- debug: msg="{{ obuilderverion }}"
+  command: opam exec -- opam sysinstall build --latest=4 --prefix="/var/ocaml" --jobs=8
+- name: System compilers 
+  command: "ls /var/ocaml"
+  register: syscomp
+- debug: msg="{{ syscomp }}"
+- name: Get OCluster
+  git: 
+    repo: 'https://github.com/patricoferris/ocluster.git'
+    dest: '/var/ocluster'
+    clone: true
+    recursive: true
