@@ -21,3 +21,6 @@ sudo chmod -R 775 $USERDIR
 echo "Making default .bash_profile"
 echo "export HOMEBREW_DISABLE_LOCKING=\"1\"" > "$USERDIR/.bash_profile"
 echo "export HOMEBREW_NO_AUTO_UPDATE=\"1\"" >> "$USERDIR/.bash_profile"
+
+sudo chown -R $USERNAME: $USERDIR
+sudo chmod -R 775 $USERDIR
