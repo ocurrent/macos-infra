@@ -1,6 +1,10 @@
 #!/bin/sh 
-echo "Install Lock-free Homebrew"
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
+
+echo "Installing vanilla homebrew"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# echo "Install Lock-free Homebrew (maybe needed for parallel support)"
+# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
 echo "Install Opam 2.0 (branch) and 2.1 (master)"
 git clone -b 2.0 git://github.com/ocaml/opam ./opam
