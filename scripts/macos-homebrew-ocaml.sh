@@ -6,11 +6,11 @@ echo "Installing vanilla homebrew"
 # echo "Install Lock-free Homebrew (maybe needed for parallel support)"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
-echo "Install Opam 2.0 (branch) and 2.1 (master)"
+echo "Install Opam 2.0 and 2.1"
 git clone -b 2.0-c++20-compat git://github.com/patricoferris/opam ./opam
 cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam 
-git clone -b master git://github.com/ocaml/opam ./opam
-cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-latest && chmod a+x ~/local/bin/opam-latest && cd ../ && rm -rf ./opam
+git clone -b 2.1 git://github.com/ocaml/opam ./opam
+cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.1 && chmod a+x ~/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
 
 echo "Default link 2.0 to opam"
 ln ~/local/bin/opam-2.0 ~/local/bin/opam
