@@ -1,5 +1,8 @@
 #!/bin/sh 
 
+# Required as the access to /tmp is forbidden
+export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
+
 echo "Installing vanilla homebrew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
