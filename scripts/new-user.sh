@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -e
+
 UNID=$1
 USERNAME=$2
 

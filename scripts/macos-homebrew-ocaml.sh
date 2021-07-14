@@ -1,5 +1,7 @@
 #!/bin/sh 
 
+set -e
+
 # Required as the access to /tmp is forbidden
 export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
 
