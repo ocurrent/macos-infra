@@ -18,7 +18,6 @@ ln ~/local/bin/opam-2.0 ~/local/bin/opam
 echo "Check opam"
 opam --version
 
-# Thanks Kate -- no opam init called just yet :)
 echo "Updating the .obuilder_profile.sh to pre-init OCaml"
 
 echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_profile.sh
@@ -41,3 +40,17 @@ homebrew-ocaml-4.04) echo 'export PATH=/Users/administrator/ocaml/4.04.2/bin:$PA
 homebrew-ocaml-4.03) echo 'export PATH=/Users/administrator/ocaml/4.03.0/bin:$PATH' >> ./.obuilder_profile.sh;;
 *) echo "Can't find the ocaml version"; exit 1;;
 esac
+
+echo "Setting up opam"
+
+git clone git://github.com/ocaml/opam-repository.git
+
+opam init -k git -a ./opam-repository
+opam install -y opam-depext
+
+echo 'export OPAMYES=1' >> ./.obuilder_profile.sh
+echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
+echo 'export OPAMDOWNLOADJOBS=1' >> ./.obuilder_profile.sh
+echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
+echo 'export OPAMSOLVERTIMEOUT=500' >> ./.obuilder_profile.sh
+echo 'export OPAMPRECISETRACKING=1' >> ./.obuilder_profile.sh
