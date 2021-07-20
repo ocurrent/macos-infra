@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -e
+
 UNID=$1
 USERNAME=$2
 
@@ -18,9 +21,9 @@ sudo mkdir -p $USERDIR/local
 sudo chown -R $USERNAME: $USERDIR
 sudo chmod -R 775 $USERDIR
 
-echo "Making default .bash_profile"
-echo "export HOMEBREW_DISABLE_LOCKING=\"1\"" > "$USERDIR/.bash_profile"
-echo "export HOMEBREW_NO_AUTO_UPDATE=\"1\"" >> "$USERDIR/.bash_profile"
+echo "Making the .obuilder_profile.sh script for obuilder to use before each commands"
+echo "export HOMEBREW_DISABLE_LOCKING=1" > "$USERDIR/.obuilder_profile.sh"
+echo "export HOMEBREW_NO_AUTO_UPDATE=1" >> "$USERDIR/.obuilder_profile.sh"
 
 sudo chown -R $USERNAME: $USERDIR
 sudo chmod -R 775 $USERDIR
