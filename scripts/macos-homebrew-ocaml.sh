@@ -37,7 +37,8 @@ macos-homebrew-*) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' 
 esac
 
 case "$USER_SUFFIX" in
-macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.0/bin:$PATH' >> ./.obuilder_profile.sh;;
+macos-homebrew-ocaml-4.13) echo 'export PATH=/Users/administrator/ocaml/4.13.1/bin:$PATH' >> ./.obuilder_profile.sh;;
+macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.11) echo 'export PATH=/Users/administrator/ocaml/4.11.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.10) echo 'export PATH=/Users/administrator/ocaml/4.10.2/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.09) echo 'export PATH=/Users/administrator/ocaml/4.09.1/bin:$PATH' >> ./.obuilder_profile.sh;;
