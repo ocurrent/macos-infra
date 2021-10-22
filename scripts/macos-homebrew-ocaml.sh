@@ -29,15 +29,18 @@ echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_p
 
 # Username is expected to match tho following pattern: mac[0-9]+-.+
 # With the suffix part being what is passed by the user in (from suffix)
-USER_SUFFIX=$(echo "$USER" | cut -d- -f2-)
 
-case "$USER_SUFFIX" in
+# I don't think we need this if we just create the user as macos-homebrew-ocaml-4.12
+# USER_SUFFIX=$(echo "$USER" | cut -d- -f2-)
+
+case "$USER" in
 macos-homebrew-*) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
 *) echo "Distribution not supported"; exit 1;;
 esac
 
-case "$USER_SUFFIX" in
-macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.0/bin:$PATH' >> ./.obuilder_profile.sh;;
+case "$USER" in
+macos-homebrew-ocaml-4.13) echo 'export PATH=/Users/administrator/ocaml/4.13.1/bin:$PATH' >> ./.obuilder_profile.sh;;
+macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.11) echo 'export PATH=/Users/administrator/ocaml/4.11.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.10) echo 'export PATH=/Users/administrator/ocaml/4.10.2/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.09) echo 'export PATH=/Users/administrator/ocaml/4.09.1/bin:$PATH' >> ./.obuilder_profile.sh;;
@@ -51,6 +54,10 @@ macos-homebrew-ocaml-4.03) echo 'export PATH=/Users/administrator/ocaml/4.03.0/b
 esac
 
 echo "Setting up opam"
+
+# Important to source the system compiler path for opam to init correctly
+# otherwise we'll pick up the host's non-system compiler!
+source ./.obuilder_profile.sh
 
 git clone git://github.com/ocaml/opam-repository.git
 
