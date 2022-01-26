@@ -12,7 +12,7 @@ echo "Installing vanilla homebrew"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
 echo "Install Opam 2.0 and 2.1"
-git clone -b 2.0-c++20-compat git://github.com/patricoferris/opam ./opam
+git clone -b 2.0 git://github.com/ocaml/opam ./opam
 cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam 
 git clone -b 2.1 git://github.com/ocaml/opam ./opam
 cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.1 && chmod a+x ~/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
