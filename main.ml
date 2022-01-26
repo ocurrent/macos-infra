@@ -15,15 +15,11 @@ let spec_file ocaml_version =
   let open Obuilder_spec in
   stage ~from:"patricoferris/empty"
     [
-      env "tmpdir" "$(getconf DARWIN_USER_TEMP_DIR)";
-      run
-        "\"$(curl -fsSL \
-         https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"";
-      run "git clone -b 2.0 git://github.com/ocaml/opam ./opam";
+      run "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"";
+      run "git clone -b backport-4927-2.0 https://github.com/kit-ty-kate/opam ./opam";
       run
         "cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam \
-         ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && \
-         rm -rf ./opam";
+         ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam ";
       run "git clone -b 2.1 git://github.com/ocaml/opam ./opam";
       run
         "cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir \
@@ -40,10 +36,9 @@ let spec_file ocaml_version =
         "echo 'export PATH=/Users/administrator/ocaml/%s/bin:$PATH' >> \
          ./.obuilder_profile.sh"
         (Ocaml_version.to_string ocaml_version);
-      run "source ./.obuilder_profile.sh";
       run "git clone git://github.com/ocaml/opam-repository.git";
-      run "opam init -k git -a ./opam-repository";
-      run "opam install -y opam-depext";
+      run "source ~/.obuilder_profile.sh && opam init -k git -a ./opam-repository";
+      run "source ~/.obuilder_profile.sh && opam install -y opam-depext";
       run "echo 'export OPAMYES=1' >> ./.obuilder_profile.sh";
       run "echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh";
       run "echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh";
@@ -59,11 +54,11 @@ let main ocaml_version rsync_path sandbox_config =
     Sandbox.create ~state_dir:(Store.state_dir store / "runc") sandbox_config
   in
   let builder = Builder.v ~store ~sandbox in
-  let log tag str =
-    match tag with
-    | `Heading -> Log.info (fun f -> f "%s" str)
-    | `Note -> Log.info (fun f -> f "%s" str)
-    | `Output -> Log.info (fun f -> f "%s" str)
+  let log tag msg =
+  match tag with
+    | `Heading -> Fmt.pr "%a@." Fmt.(styled (`Fg (`Hi `Blue)) string) msg
+    | `Note -> Fmt.pr "%a@." Fmt.(styled (`Fg `Yellow) string) msg
+    | `Output -> output_string stdout msg; flush stdout
   in
   let context = Obuilder.Context.v ~log ~src_dir:"." () in
   Log.info (fun f ->
@@ -109,7 +104,7 @@ let ov_term =
 
 let rsync_term =
   Arg.required
-  @@ Arg.opt Arg.(some dir) None
+  @@ Arg.opt Arg.(some string) None
   @@ Arg.info ~doc:"The rsync directory to store results." ~docv:"RSYNC"
        [ "rsync" ]
 
