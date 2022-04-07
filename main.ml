@@ -20,7 +20,7 @@ let spec_file ocaml_version =
       run
         "cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam \
          ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam ";
-      run "git clone -b 2.1 git://github.com/ocaml/opam ./opam";
+      run "git clone -b 2.1 https://github.com/ocaml/opam ./opam";
       run
         "cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir \
          -p ~/local/bin && cp ./opam ~/local/bin/opam-2.1 && chmod a+x \
@@ -36,7 +36,7 @@ let spec_file ocaml_version =
         "echo 'export PATH=/Users/administrator/ocaml/%s/bin:$PATH' >> \
          ./.obuilder_profile.sh"
         (Ocaml_version.to_string ocaml_version);
-      run "git clone git://github.com/ocaml/opam-repository.git";
+      run "git clone https://github.com/ocaml/opam-repository.git";
       run "source ~/.obuilder_profile.sh && opam init -k git -a ./opam-repository";
       run "source ~/.obuilder_profile.sh && opam install -y opam-depext";
       run "echo 'export OPAMYES=1' >> ./.obuilder_profile.sh";
