@@ -1,4 +1,1 @@
-(executable
- (name main)
- ; (public_name macos-base-image)
- (libraries obuilder obuilder-spec ocaml-version logs.cli logs.fmt fmt.tty fmt.cli))
+(vendored_dirs obuilder)

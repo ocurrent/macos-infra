@@ -1,0 +1,5 @@
+(library
+ (name macos_base_image)
+ (libraries obuilder current current.cache obuilder-spec ocaml-version)
+ (preprocess
+  (pps ppx_deriving_yojson)))
