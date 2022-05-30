@@ -64,9 +64,7 @@ let duration_term =
 
 let dockerfile =
   let open Dockerfile in
-  from "scratch"
-  @@ copy ~src:[ "." ] ~dst:"/" ()
-  @@ cmd_exec [ "/bin/bash" ]
+  from "scratch" @@ copy ~src:[ "." ] ~dst:"/" () @@ cmd_exec [ "/bin/bash" ]
   |> string_of_t
 
 let pipeline ~docker_repo ~ocaml_version ~rsync_path ~sandbox_config schedule =
@@ -77,10 +75,10 @@ let pipeline ~docker_repo ~ocaml_version ~rsync_path ~sandbox_config schedule =
   match docker_repo with
   | None -> hash
   | Some docker_repo ->
-      let path = Current.map (fun hash -> Fpath.(v "/Volumes/rsync/result" / hash)) hash in
-      let dockerfile =
-        Current.return (`Contents dockerfile)
+      let path =
+        Current.map (fun hash -> Fpath.(v "/Volumes/rsync/result" / hash)) hash
       in
+      let dockerfile = Current.return (`Contents dockerfile) in
       let image =
         Current_docker.Default.build ~dockerfile ~pull:true (`Dir path)
       in

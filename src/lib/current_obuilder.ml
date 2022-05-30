@@ -86,8 +86,10 @@ module Build_op = struct
     let builder = Builder.v ~store ~sandbox in
     let log tag msg =
       match tag with
-      | `Heading -> Current.Job.log job "%a@." Fmt.(styled (`Fg (`Hi `Blue)) string) msg
-      | `Note -> Current.Job.log job "%a@." Fmt.(styled (`Fg `Yellow) string) msg
+      | `Heading ->
+          Current.Job.log job "%a@." Fmt.(styled (`Fg (`Hi `Blue)) string) msg
+      | `Note ->
+          Current.Job.log job "%a@." Fmt.(styled (`Fg `Yellow) string) msg
       | `Output -> Current.Job.log job "%s%!" msg
     in
     let context = Obuilder.Context.v ~log ~src_dir:"." () in
