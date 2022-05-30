@@ -35,26 +35,10 @@ We want to have multiple Homebrew installations that all believe they are instal
 
 The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is.
 
-```graphviz
-digraph G {
-  graph [pad="0.5", center=true, nodesep="1", ranksep="1"];
-  "/usr/local" [shape="box", fontsize=15.0 style=filled,color=grey];
-  subgraph cluster_0 {
-    label="Users";
-    "mac705";
-    "mac706";
-  }
-  "mac705" -> "/usr/local" [color=blue];
-  "mac706" -> "/usr/local" [color=red];
-  subgraph cluster_1 {
-    label="Home Directories";
-    "/Users/mac705/local";
-    "/Users/mac706/local";
-  }
-  "/usr/local" -> "/Users/mac705/local" [color=blue];
-  "/usr/local" -> "/Users/mac706/local" [color=red];
- }
-```
+<p align="center">
+    <img src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
+</p>
+
 
 FUSE luckily supplies all commands with a `fuse_context` which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [obuilder-fs](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted and all calls to `/usr/local` are redirected. This does have some cost, but in practice most packages make use of a few core system dependencies.
 
@@ -63,29 +47,6 @@ FUSE luckily supplies all commands with a `fuse_context` which provides the `uid
 With the scheme described above, each user's home directory is easy to find as it is based on the `uid`. One problem though is that for each build step (`run`, `copy`...) we take a snapshot so we can later restore from it. This means we need to sync the home directory with the snapshot. This is also important for packages that are not relocatable (at the time of writing `ocamlfind` is an example).
 
 The workaround is to `rsync` the snapshot from the store to the user's home directory every time we execute a step. This is exactly what happens in this [code in the macOS sandbox implementation](https://github.com/patricoferris/obuilder/blob/8c3f200b519ad14a5f70787e42f59ec7db229d3c/lib/sandbox.macos.ml#L61).
-
-We also use a `scoreboard` directory to let FUSE map UIDs to home directories. This might actually be more of an artefact now that the implementation preserves the directory used to build throughout the execution.
-
-```graphviz
-digraph G {
-  graph [pad="0.5", fontname="helvetica", center=true, nodesep="1", ranksep="1"];
-  "/usr/local" [shape="box", fontsize=15.0 style=filled,color=grey,fontname="helvetica"];
-  subgraph cluster_0 {
-    label="Users";
-    "mac705"[fontname="helvetica"];
-    "mac706"[fontname="helvetica"];
-  }
-  "mac705" -> "/usr/local" [color=blue];
-  "mac706" -> "/usr/local" [color=red];
-  subgraph cluster_2 {
-    label="Scoreboard";
-    "705" -> "/Volumes/tank/result/1234"[fontname="helvetica", color=blue];
-    "706" -> "/Volumes/tank/result/5678"[color=red];
-  }
-  "/usr/local" -> "705"[color=blue];
-  "/usr/local" -> "706"[color=red];
- }
-```
 
 ### Docker-esque Base Images
 
