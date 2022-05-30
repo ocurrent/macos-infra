@@ -35,10 +35,7 @@ We want to have multiple Homebrew installations that all believe they are instal
 
 The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is.
 
-<p align="center">
-    <img src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
-</p>
-
+<img src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
 
 FUSE luckily supplies all commands with a `fuse_context` which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [obuilder-fs](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted and all calls to `/usr/local` are redirected. This does have some cost, but in practice most packages make use of a few core system dependencies.
 
