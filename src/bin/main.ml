@@ -62,24 +62,24 @@ let duration_term =
   @@ Arg.info ~doc:"How often to retrigger the pipeline to rebuild the images."
        ~docv:"SCHEDULE" [ "schedule" ]
 
-let dockerfile username =
+let dockerfile =
   let open Dockerfile in
   from "scratch"
-  @@ copy ~src:[ "./" ^ username ] ~dst:"/" ()
+  @@ copy ~src:[ "." ] ~dst:"/" ()
   @@ cmd_exec [ "/bin/bash" ]
   |> string_of_t
 
 let pipeline ~docker_repo ~ocaml_version ~rsync_path ~sandbox_config schedule =
   let open Macos_base_image in
-  let user =
+  let hash =
     Current_obuilder.build ~ocaml_version ~rsync_path ~sandbox_config schedule
   in
   match docker_repo with
-  | None -> user
+  | None -> hash
   | Some docker_repo ->
-      let path = Current.map (fun user -> Fpath.(v "/Users" / user)) user in
+      let path = Current.map (fun hash -> Fpath.(v "/Volumes/rsync/result" / hash)) hash in
       let dockerfile =
-        Current.map (fun user -> `Contents (dockerfile user)) user
+        Current.return (`Contents dockerfile)
       in
       let image =
         Current_docker.Default.build ~dockerfile ~pull:true (`Dir path)
