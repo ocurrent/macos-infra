@@ -42,6 +42,12 @@ let rsync_term =
   @@ Arg.info ~doc:"The rsync directory to store results." ~docv:"RSYNC"
        [ "rsync" ]
 
+let docker_repo_term =
+  Arg.value
+  @@ Arg.opt Arg.(some string) None
+  @@ Arg.info ~doc:"The docker repository, e.g. ocaml/opam." ~docv:"REPO"
+       [ "docker-repo" ]
+
 let duration_term =
   let schedule =
     let parser s =
@@ -56,15 +62,41 @@ let duration_term =
   @@ Arg.info ~doc:"How often to retrigger the pipeline to rebuild the images."
        ~docv:"SCHEDULE" [ "schedule" ]
 
+let dockerfile username =
+  let open Dockerfile in
+  from "scratch"
+  @@ copy ~src:[ "./" ^ username ] ~dst:"/" ()
+  @@ cmd_exec [ "/bin/bash" ]
+  |> string_of_t
+
+let pipeline ~docker_repo ~ocaml_version ~rsync_path ~sandbox_config schedule =
+  let open Macos_base_image in
+  let user =
+    Current_obuilder.build ~ocaml_version ~rsync_path ~sandbox_config schedule
+  in
+  match docker_repo with
+  | None -> user
+  | Some docker_repo ->
+      let path = Current.map (fun user -> Fpath.(v "/Users" / user)) user in
+      let dockerfile =
+        Current.map (fun user -> `Contents (dockerfile user)) user
+      in
+      let image =
+        Current_docker.Default.build ~dockerfile ~pull:true (`Dir path)
+      in
+      Current_docker.Default.push
+        ~tag:(docker_repo ^ ":" ^ make_tag ocaml_version)
+        image
+
 let cmd =
   let doc = "Builder for macOS base images" in
-  let main () config valid_for mode ocaml_version rsync_path sandbox_config =
-    let open Macos_base_image in
+  let main () config valid_for mode docker_repo ocaml_version rsync_path
+      sandbox_config =
     let schedule = Current_cache.Schedule.v ?valid_for () in
     let engine =
       Current.Engine.create ~config (fun () ->
           Current.ignore_value
-          @@ Current_obuilder.build ~ocaml_version ~rsync_path ~sandbox_config
+          @@ pipeline ~docker_repo ~ocaml_version ~rsync_path ~sandbox_config
                schedule)
     in
     let site =
@@ -84,6 +116,7 @@ let cmd =
     (Cmd.info "macos-base-image" ~doc)
     Term.(
       const main $ setup_log $ Current.Config.cmdliner $ duration_term
-      $ Current_web.cmdliner $ ov_term $ rsync_term $ Obuilder.Sandbox.cmdliner)
+      $ Current_web.cmdliner $ docker_repo_term $ ov_term $ rsync_term
+      $ Obuilder.Sandbox.cmdliner)
 
 let () = Cmd.(exit @@ eval cmd)

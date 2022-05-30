@@ -4,6 +4,8 @@
  (libraries
   current
   current_web
+  current_docker
+  dockerfile
   macos_base_image
   logs.cli
   logs.fmt

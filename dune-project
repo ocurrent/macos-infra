@@ -21,5 +21,9 @@
    obuilder
    obuilder-spec
    ocaml-version
+   current
+   current_docker
+   current_web
+   dockerfile
    logs
    fmt))

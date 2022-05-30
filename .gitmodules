@@ -2,3 +2,6 @@
 	path = obuilder
 	url = https://github.com/patricoferris/obuilder
 	branch = macos-v2
+[submodule "ocurrent"]
+	path = ocurrent
+	url = https://github.com/patricoferris/ocurrent
