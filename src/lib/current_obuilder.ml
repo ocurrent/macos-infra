@@ -86,11 +86,9 @@ module Build_op = struct
     let builder = Builder.v ~store ~sandbox in
     let log tag msg =
       match tag with
-      | `Heading -> Fmt.pr "%a@." Fmt.(styled (`Fg (`Hi `Blue)) string) msg
-      | `Note -> Fmt.pr "%a@." Fmt.(styled (`Fg `Yellow) string) msg
-      | `Output ->
-          output_string stdout msg;
-          flush stdout
+      | `Heading -> Current.Job.log job "%a@." Fmt.(styled (`Fg (`Hi `Blue)) string) msg
+      | `Note -> Current.Job.log job "%a@." Fmt.(styled (`Fg `Yellow) string) msg
+      | `Output -> Current.Job.log job "%s%!" msg
     in
     let context = Obuilder.Context.v ~log ~src_dir:"." () in
     Current.Job.log job "Building base image for %a" Ocaml_version.pp
