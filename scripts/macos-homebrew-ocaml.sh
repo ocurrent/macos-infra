@@ -35,12 +35,12 @@ echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_p
 # USER_SUFFIX=$(echo "$USER" | cut -d- -f2-)
 
 case "$USER" in
-macos-homebrew-*) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
+mac1000) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
 *) echo "Distribution not supported"; exit 1;;
 esac
 
 case "$USER" in
-macos-homebrew-ocaml-4.14) echo 'export PATH=/Users/administrator/ocaml/4.14.0/bin:$PATH' >> ./.obuilder_profile.sh;;
+mac1000) echo 'export PATH=/Users/administrator/ocaml/4.14.0/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.13) echo 'export PATH=/Users/administrator/ocaml/4.13.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.11) echo 'export PATH=/Users/administrator/ocaml/4.11.1/bin:$PATH' >> ./.obuilder_profile.sh;;
