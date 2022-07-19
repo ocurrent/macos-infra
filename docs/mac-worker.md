@@ -24,7 +24,9 @@ Open the Docker app from Applications and authorise it to make changes to the sy
 
 This isn't essential but it saves retyping the password many, many times:
 
+```
 echo "%admin ALL=(ALL) NOPASSWD: ALL" > /private/etc/sudoers.d/admin
+```
 
 # Add SSH key
 
@@ -110,16 +112,16 @@ chmod +x *.sh
 Setup a `scoreboard` folder.  This folder is used by `obuilderfs` to redirect access to `/usr/local`.  See the steps below:
 
 1) Create an empty folder
-2) Create a user called `macos-homebrew-ocaml-4.14` (with home directory `/Users/macos-homebrew-ocaml-4.14`) with user id 714.  It can be any number > 501.  Password is `ocaml` which is needed for SUDO later
+2) Create a user called `mac1000` to match so the opam installion folder will match later on.  Then rename the user folder from `/Users/mac1000' to `/Users/macos-homebrew-ocaml-4.14`. It can be any number > 501.  Password is `ocaml` which is needed for SUDO later
 3) Create a link in the `scoreboard` folder redirecting to the users home directory
 4) Run `obuilderfs` which takes the scoreboard folder and the folder being redirected as parameters.
 
-Access to from user id 714 to `/usr/local` will redirected/intercepted via `/System/Volumes/Data/scoreboard/714` and sent to `/Users/macos-homebrew-ocaml-4.14/local`
+Access to from user id 1000 to `/usr/local` will redirected/intercepted via `/System/Volumes/Data/scoreboard/1000` and sent to `/Users/mac1000/local`
 
 ```shell=
 mkdir ~/scoreboard
-./new-user.sh 714 mac1000
-ln -Fhs /Users/mac1000 ~/scoreboard/714
+./new-user.sh 1000 mac1000
+ln -Fhs /Users/mac1000 ~/scoreboard/1000
 sudo obuilderfs ~/scoreboard /usr/local -o allow_other
 sudo chown -R mac1000:admin /Users/mac1000
 ```
@@ -136,7 +138,8 @@ sudo chown -R mac1000:admin /Users/mac1000
 After that has finished, delete the the user but leave the home directory (aka the base image) in place.
 
 ```shell=
-sudo dscl . -delete /Users/macos-homebrew-ocaml-4.14
+sudo dscl . -delete /Users/mac1000
+sudo mv /Users/mac1000 /Users/macos-homebrew-ocaml-4.14
 ```
 
 And unmount obuilderfs on `/usr/local`
@@ -209,7 +212,7 @@ eval $(opam env)
 ```shell=
 mkdir ~/lib
 sudo -E DYLD_FALLBACK_LIBRARY_PATH=/Users/administrator/lib dune exec --profile release -- ocluster-worker --connect ~/pool-macos-x86_64.cap \
-  --uid=705 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard \
+  --uid=1000 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard \
   --obuilder-store=rsync:/Volumes/rsync --state-dir=/var/lib/ocluster-worker \
   --name=`hostname` --capacity=1 --obuilder-prune-threshold=10 --verbosity=info
 ```
