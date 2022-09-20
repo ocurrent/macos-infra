@@ -76,7 +76,7 @@ opam install dune
 Opam needs a helper application called `opam-sysintall` to allow it to install OCaml to the system folders rather than using a switch.  Install the helper like this:
 
 ```shell=
-opam pin add opam-sysinstall git+https://github.com/mtelvers/opam-sysinstall --yes
+opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall --yes
 ```
 
 Then install OCaml:
@@ -92,7 +92,7 @@ opam exec -- opam sysinstall build --version 4.14.0 --prefix=`pwd`/ocaml --jobs=
 This is the Fuse file system.
 
 ```shell=
-git clone https://github.com/patricoferris/obuilder-fs
+git clone https://github.com/ocurrent/obuilder-fs
 brew install pkg-config
 cd obuilder-fs
 make && make install
@@ -104,7 +104,7 @@ cd ..
 Download Patrick's scripts:
 
 ```shell=
-git clone https://github.com/mtelvers/macos-infra
+git clone https://github.com/ocurrent/macos-infra
 cd macos-infra/scripts
 chmod +x *.sh
 ```
@@ -304,10 +304,9 @@ umount -f /usr/local
 for a in $(sudo dscl . list /Users | grep mac) ; do echo $a ; sudo rm -rf /Users/$a ; sudo dscl . -delete /Users/$a ; done
 sudo rm -rf /Users/macos-homebrew-ocaml-4.14-original
 sudo mv /Users/macos-homebrew-ocaml-4.14 /Users/macos-homebrew-ocaml-4.14-original
-
 mkdir ~/scoreboard
 cd /Users/administrator/macos-infra/scripts
-./new-user.sh 1000 mac1000
+sudo ./new-user.sh 1000 mac1000
 ln -Fhs /Users/mac1000 ~/scoreboard/1000
 sudo obuilderfs ~/scoreboard /usr/local -o allow_other
 cp macos-homebrew-ocaml.sh /Users/mac1000
@@ -321,6 +320,16 @@ exit
 sudo dscl . -delete /Users/mac1000
 sudo umount /usr/local
 sudo mv /Users/mac1000 /Users/macos-homebrew-ocaml-4.14
+sudo rm -rf /Volumes/rsync
+
+# A typical command line
+
+cd ~/ocluster
+eval $(opam env)
+sudo -E DYLD_FALLBACK_LIBRARY_PATH=/Users/administrator/lib dune exec --profile release -- ocluster-worker --connect ~/pool-macos-x86_64.cap \
+  --uid=1000 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard \
+  --obuilder-store=rsync:/Volumes/rsync --state-dir=/var/lib/ocluster-worker \
+  --name=`hostname` --capacity=1 --obuilder-prune-threshold=10 --verbosity=info
 
 ```
 
