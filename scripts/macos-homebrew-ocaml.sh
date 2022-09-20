@@ -11,14 +11,15 @@ echo "Installing vanilla homebrew"
 # echo "Install Lock-free Homebrew (maybe needed for parallel support)"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
-echo "Install Opam 2.0 and 2.1"
-git clone -b 2.0 git://github.com/ocaml/opam ./opam
-cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam 
-git clone -b 2.1 git://github.com/ocaml/opam ./opam
+# echo "Install Opam 2.0 and 2.1"
+echo "Install Opam 2.1"
+# git clone -b 2.0 https://github.com/ocaml/opam ./opam
+# cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam 
+git clone -b 2.1 https://github.com/ocaml/opam ./opam
 cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.1 && chmod a+x ~/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
 
-echo "Default link 2.0 to opam"
-ln ~/local/bin/opam-2.0 ~/local/bin/opam
+echo "Default link 2.1 to opam"
+ln ~/local/bin/opam-2.1 ~/local/bin/opam
 
 echo "Check opam"
 opam --version
@@ -34,11 +35,12 @@ echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_p
 # USER_SUFFIX=$(echo "$USER" | cut -d- -f2-)
 
 case "$USER" in
-macos-homebrew-*) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
+mac1000) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
 *) echo "Distribution not supported"; exit 1;;
 esac
 
 case "$USER" in
+mac1000) echo 'export PATH=/Users/administrator/ocaml/4.14.0/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.13) echo 'export PATH=/Users/administrator/ocaml/4.13.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.1/bin:$PATH' >> ./.obuilder_profile.sh;;
 macos-homebrew-ocaml-4.11) echo 'export PATH=/Users/administrator/ocaml/4.11.1/bin:$PATH' >> ./.obuilder_profile.sh;;
@@ -59,7 +61,7 @@ echo "Setting up opam"
 # otherwise we'll pick up the host's non-system compiler!
 source ./.obuilder_profile.sh
 
-git clone git://github.com/ocaml/opam-repository.git
+git clone https://github.com/ocaml/opam-repository.git
 
 opam init -k git -a ./opam-repository
 opam install -y opam-depext
@@ -68,3 +70,4 @@ echo 'export OPAMYES=1' >> ./.obuilder_profile.sh
 echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
 echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
 echo 'export OPAMPRECISETRACKING=1' >> ./.obuilder_profile.sh
+
