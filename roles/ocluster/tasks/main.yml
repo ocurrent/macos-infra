@@ -1,0 +1,31 @@
+---
+
+- name: Download the source from GitHub
+  git:
+    repo: https://github.com/patricoferris/ocluster.git
+    dest: "{{ ansible_env.HOME }}/ocluster"
+    version: macos-v2
+    force: yes
+
+- name: Fetch my PR
+  shell: git fetch origin pull/1/head:my-pr
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
+- name: Checkout my PR
+  shell: git checkout my-pr
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
+- name: Install Opam dependencies
+  shell: eval $(opam env) && opam install . -y --confirm-level=unsafe-yes
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
+- name: Copy pool capability
+  copy:
+    src: "secrets/pool-macos-x86_64.cap"
+    dest: "{{ ansible_env.HOME }}/pool-macos-x86_64.cap"
+    mode: '0400'
+
+

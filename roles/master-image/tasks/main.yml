@@ -1,0 +1,117 @@
+---
+
+- name: Download the source from GitHub
+  git:
+    repo: https://github.com/ocurrent/macos-infra
+    dest: "{{ ansible_env.HOME }}/macos-infra"
+    force: yes
+
+- name: chmod +x
+  file:
+    dest: "{{ ansible_env.HOME }}/macos-infra/scripts/{{ item }}"
+    mode: a+x
+  loop:
+    - new-user.sh
+    - macos-homebrew-ocaml.sh
+    - cleanup.sh
+
+- name: Create a scoreboard directory if it does not exist
+  file:
+    path: "{{ ansible_env.HOME }}/scoreboard"
+    state: directory
+    mode: '0755'
+
+- name: Check for user mac1000
+  shell: dscl . read /Users/mac1000
+  register: user_check
+  failed_when: user_check.rc == -1
+
+- name: Create user mac1000
+  shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 mac1000"
+  when: user_check.rc != 0
+
+- name: Create sudo file for mac1000
+  copy:
+    dest: "/private/etc/sudoers.d/mac1000"
+    content: |
+      %mac1000 ALL=(ALL) NOPASSWD: ALL
+  become: yes
+
+- name: Create a symbolic link
+  file:
+    src: /Users/mac1000
+    dest: "{{ ansible_env.HOME }}/scoreboard/1000"
+    state: link
+
+- name: Create /Users/mac1000/local -- this should be created by new-user.sh
+  file:
+    path: /Users/mac1000/local
+    state: directory
+    mode: '0755'
+    owner: mac1000
+    group: admin
+  become: yes
+
+- name: Unmount /usr/local if it is mounted
+  become: yes
+  mount:
+    path: /usr/local
+    state: unmounted
+
+- name: mount /usr/local
+  become: yes
+  shell: obuilderfs {{ ansible_env.HOME }}/scoreboard /usr/local -o allow_other
+
+- name: Copy file setup script
+  become: yes
+  copy:
+    src: "{{ ansible_env.HOME }}/macos-infra/scripts/macos-homebrew-ocaml.sh"
+    remote_src: yes
+    dest: /Users/mac1000/macos-homebrew-ocaml.sh
+    mode: u+rwx,g+rx,o+rx
+
+- name: chown /Users/mac1000 just to be sure
+  become: yes
+  file:
+    dest: /Users/mac1000
+    owner: mac1000
+    group: admin
+    recurse: yes
+
+- name: Run macos-homebrew-ocaml.sh script as user mac1000
+  become: yes
+  become_user: mac1000
+  shell: echo | ./macos-homebrew-ocaml.sh
+  args:
+    chdir: /Users/mac1000
+    creates: /Users/mac1000/opam-repository
+
+- name: Unmount /usr/local if it is mounted
+  become: yes
+  mount:
+    path: /usr/local
+    state: unmounted
+
+- name: Delete user mac1000
+  become: yes
+  shell: dscl . -delete /Users/mac1000
+
+- name: Remove /Users/macos-homebrew-ocaml-4.14
+  become: yes
+  file:
+    state: absent
+    path: /Users/macos-homebrew-ocaml-4.14
+
+- name: Move /Users/mac1000 to /Users/macos-homebrew-ocaml-4.14
+  become: yes
+  shell: mv /Users/mac1000 /Users/macos-homebrew-ocaml-4.14
+  args:
+    removes: /Users/mac1000
+    creates: /Users/macos-homebrew-ocaml-4.14
+
+- name: Remove /Volumes/rsync
+  become: yes
+  file:
+    state: absent
+    path: /Volumes/rsync
+

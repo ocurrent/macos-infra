@@ -1,0 +1,30 @@
+---
+
+- name: Initialise opam
+  shell: opam init -y
+
+- name: Update Opam
+  shell: opam update && opam upgrade -y
+
+- name: Install Dune
+  shell: eval $(opam env) && opam install dune
+
+- name: Test for opam-sysinstall
+  shell: eval $(opam env) && which opam-sysinstall
+  register: which
+  failed_when: which.rc == 2
+
+- name: Pin opam-sysinstall
+  shell: eval $(opam env) && opam pin add opam-sysinstall git+https://github.com/patricoferris/opam-sysinstall#mtelvers/main --yes
+  when: which.rc != 0
+
+- name: Opam System Compilers Directory
+  file:
+    path: "{{ ansible_env.HOME }}/ocaml"
+    state: directory
+
+- name: Install a system compiler
+  shell: eval $(opam env) && opam exec -- opam sysinstall build --version 4.14.0 --prefix="{{ ansible_env.HOME }}/ocaml" --jobs=6
+  args:
+    creates: "{{ ansible_env.HOME }}/ocaml/bin/ocaml"
+

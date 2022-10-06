@@ -1,0 +1,23 @@
+---
+
+- hosts: all
+  tasks:
+  - name: Create sudo file for admin
+    copy:
+      dest: "/private/etc/sudoers.d/admin"
+      content: |
+        %admin ALL=(ALL) NOPASSWD: ALL
+    become: yes
+
+- hosts: all
+  name: Install Roles
+  roles:
+    - homebrew
+    - ocaml
+    - obuilder-fs
+    - master-image
+    - busybox
+    - ocluster
+  environment: 
+    PATH: '/usr/local/bin:{{ ansible_env.PATH }}'
+

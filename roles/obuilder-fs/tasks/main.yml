@@ -1,0 +1,17 @@
+---
+
+- name: Download the source from GitHub
+  git:
+    repo: https://github.com/ocurrent/obuilder-fs
+    dest: "{{ ansible_env.HOME }}/obuilder-fs"
+    force: yes
+
+- name: Test for obuilderfs
+  shell: eval $(opam env) && which obuilderfs
+  register: which
+  failed_when: which.rc == 2
+
+- name: Install obuilder-fs
+  shell: cd obuilder-fs && make && make install
+  when: which.rc != 0
+
