@@ -16,6 +16,7 @@ This document tells the ongoing story of supporting macOS in OCaml's Continuous 
     - [Docker-esque Base Images](#docker-esque-base-images)
 - [OCluster macOS Worker](#ocluster-macos-worker)
     - [Building a macOS Base Directory](#building-a-macos-base-directory)
+- [Ansible Playbook](#ansible-playbook)
 - [Current Deployment and Future Steps](#current-deployment-and-future-steps)
 - [Thanks](#thanks)
 
@@ -132,6 +133,27 @@ CMD [ "/bin/bash" ]
 ```
 
 And push the image.
+
+## Ansible Playbook
+
+The Ansible playbook can be used to deploy Mac workers.  The following pre-requisites should be satisfied:
+
+1) Set up Remote Login via System Preferences, Sharing, then select Remote Login.  Also, select the “Allow full disk access for remote users” checkbox.
+2) Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
+
+```
+Host mac-mon-*
+	User administrator
+```
+
+3) Install [macFUSE](https://osxfuse.github.io) which requires approval via System Preferences and a reboot of the system.
+4) Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
+
+Run the playbook as follows.  I have used `--limit` to target a single worker.
+
+```sh=
+ansible-playbook -i hosts --limit mac-mon-2 playbook.yml
+```
 
 ## Current Deployment and Future Steps
 
