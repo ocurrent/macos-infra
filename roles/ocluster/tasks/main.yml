@@ -17,6 +17,11 @@
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
+- name: Update Fetcher variable to User_temp
+  shell: "sed -i '' 's/module Fetcher = Obuilder.Docker/module Fetcher = Obuilder.User_temp/' worker/obuilder_build.ml"
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
 - name: Install Opam dependencies
   shell: eval $(opam env) && opam install . -y --confirm-level=unsafe-yes
   args:

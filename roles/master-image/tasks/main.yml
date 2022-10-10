@@ -21,34 +21,34 @@
     state: directory
     mode: '0755'
 
-- name: Check for user mac1000
-  shell: dscl . read /Users/mac1000
+- name: Check for user {{ user_name }}
+  shell: dscl . read /Users/{{ user_name }}
   register: user_check
   failed_when: user_check.rc == -1
 
-- name: Create user mac1000
-  shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 mac1000"
+- name: Create user {{ user_name }}
+  shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 {{ user_name }}"
   when: user_check.rc != 0
 
-- name: Create sudo file for mac1000
+- name: Create sudo file for {{ user_name }}
   copy:
-    dest: "/private/etc/sudoers.d/mac1000"
+    dest: "/private/etc/sudoers.d/{{ user_name }}"
     content: |
-      %mac1000 ALL=(ALL) NOPASSWD: ALL
+      %{{ user_name }} ALL=(ALL) NOPASSWD: ALL
   become: yes
 
 - name: Create a symbolic link
   file:
-    src: /Users/mac1000
+    src: /Users/{{ user_name }}
     dest: "{{ ansible_env.HOME }}/scoreboard/1000"
     state: link
 
-- name: Create /Users/mac1000/local -- this should be created by new-user.sh
+- name: Create /Users/{{ user_name }}/local -- this should be created by new-user.sh
   file:
-    path: /Users/mac1000/local
+    path: /Users/{{ user_name }}/local
     state: directory
     mode: '0755'
-    owner: mac1000
+    owner: "{{ user_name }}"
     group: admin
   become: yes
 
@@ -65,26 +65,27 @@
 - name: Copy file setup script
   become: yes
   copy:
-    src: "{{ ansible_env.HOME }}/macos-infra/scripts/macos-homebrew-ocaml.sh"
+    #src: "{{ ansible_env.HOME }}/macos-infra/scripts/macos-homebrew-ocaml.sh"
+    src: "{{ ansible_env.HOME }}/macos-homebrew-ocaml.sh"
     remote_src: yes
-    dest: /Users/mac1000/macos-homebrew-ocaml.sh
+    dest: /Users/{{ user_name }}/macos-homebrew-ocaml.sh
     mode: u+rwx,g+rx,o+rx
 
-- name: chown /Users/mac1000 just to be sure
+- name: chown /Users/{{ user_name }} just to be sure
   become: yes
   file:
-    dest: /Users/mac1000
-    owner: mac1000
+    dest: "/Users/{{ user_name }}"
+    owner: "{{ user_name }}"
     group: admin
     recurse: yes
 
-- name: Run macos-homebrew-ocaml.sh script as user mac1000
+- name: Run macos-homebrew-ocaml.sh script as user {{ user_name }}
   become: yes
-  become_user: mac1000
-  shell: echo | ./macos-homebrew-ocaml.sh
+  become_user: "{{ user_name }}"
+  shell: echo | ./macos-homebrew-ocaml.sh macos-homebrew-ocaml-4.14
   args:
-    chdir: /Users/mac1000
-    creates: /Users/mac1000/opam-repository
+    chdir: "/Users/{{ user_name }}"
+    creates: "/Users/{{ user_name }}/opam-repository"
 
 - name: Unmount /usr/local if it is mounted
   become: yes
@@ -92,9 +93,9 @@
     path: /usr/local
     state: unmounted
 
-- name: Delete user mac1000
+- name: Delete user {{ user_name }}
   become: yes
-  shell: dscl . -delete /Users/mac1000
+  shell: dscl . -delete /Users/{{ user_name }}
 
 - name: Remove /Users/macos-homebrew-ocaml-4.14
   become: yes
@@ -102,12 +103,12 @@
     state: absent
     path: /Users/macos-homebrew-ocaml-4.14
 
-- name: Move /Users/mac1000 to /Users/macos-homebrew-ocaml-4.14
+- name: Move /Users/{{ user_name }} to /Users/macos-homebrew-ocaml-4.14
   become: yes
-  shell: mv /Users/mac1000 /Users/macos-homebrew-ocaml-4.14
+  shell: "mv /Users/{{ user_name }} /Users/macos-homebrew-ocaml-4.14"
   args:
-    removes: /Users/mac1000
-    creates: /Users/macos-homebrew-ocaml-4.14
+    removes: "/Users/{{ user_name }}"
+    creates: "/Users/macos-homebrew-ocaml-4.14"
 
 - name: Remove /Volumes/rsync
   become: yes
