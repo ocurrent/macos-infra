@@ -2,20 +2,24 @@
 
 - name: Download the source from GitHub
   git:
-    repo: https://github.com/patricoferris/ocluster.git
+    repo: https://github.com/ocurrent/ocluster.git
     dest: "{{ ansible_env.HOME }}/ocluster"
-    version: macos-v2
     force: yes
 
-- name: Fetch my PR
-  shell: git fetch origin pull/1/head:my-pr
+- name: Download the source from GitHub
+  shell: git fetch origin refs/pull/193/head && git reset --hard 9c8be33c
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
-- name: Checkout my PR
-  shell: git checkout my-pr
+- name: Add remote obuilder
+  shell: git remote add misterda https://github.com/MisterDA/obuilder.git && git fetch --all
   args:
-    chdir: "{{ ansible_env.HOME }}/ocluster"
+    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
+
+- name: Checkout the correct SHA
+  shell: git checkout 45db561da534d55c40761a163e5e57ed171b44a9
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Update Fetcher variable to User_temp
   shell: "sed -i '' 's/module Fetcher = Obuilder.Docker/module Fetcher = Obuilder.User_temp/' worker/obuilder_build.ml"

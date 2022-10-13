@@ -66,8 +66,8 @@
   become: yes
   copy:
     #src: "{{ ansible_env.HOME }}/macos-infra/scripts/macos-homebrew-ocaml.sh"
-    src: "{{ ansible_env.HOME }}/macos-homebrew-ocaml.sh"
-    remote_src: yes
+    #remote_src: yes
+    src: "scripts/macos-homebrew-ocaml.sh"
     dest: /Users/{{ user_name }}/macos-homebrew-ocaml.sh
     mode: u+rwx,g+rx,o+rx
 
@@ -112,7 +112,7 @@
 
 - name: Remove /Volumes/rsync
   become: yes
-  file:
-    state: absent
-    path: /Volumes/rsync
+  shell: rm -rf /Volumes/rsync
+  args:
+    removes: /Volumes/rsync
 
