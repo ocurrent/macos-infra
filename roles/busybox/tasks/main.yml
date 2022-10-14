@@ -18,7 +18,6 @@
       export HOMEBREW_NO_AUTO_UPDATE=1
       export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
       export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
-      export PATH=/Users/administrator/ocaml/4.14.0/bin:$PATH
       export OPAMYES=1
       export OPAMCONFIRMLEVEL=unsafe-yes
       export OPAMERRLOGLEN=0

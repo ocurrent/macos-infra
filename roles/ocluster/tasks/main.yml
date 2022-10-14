@@ -7,7 +7,7 @@
     force: yes
 
 - name: Download the source from GitHub
-  shell: git fetch origin refs/pull/193/head && git reset --hard 9c8be33c
+  shell: git fetch origin refs/pull/193/head && git reset --hard 104b505
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
@@ -17,14 +17,15 @@
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Checkout the correct SHA
-  shell: git checkout 45db561da534d55c40761a163e5e57ed171b44a9
+  shell: git checkout 20229cbdae4dc55b3f1ca5e68c6c48e337dd91d7
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Update Fetcher variable to User_temp
-  shell: "sed -i '' 's/module Fetcher = Obuilder.Docker/module Fetcher = Obuilder.User_temp/' worker/obuilder_build.ml"
-  args:
-    chdir: "{{ ansible_env.HOME }}/ocluster"
+  replace:
+    path: "{{ ansible_env.HOME }}/ocluster/worker/obuilder_build.ml"
+    regexp: '^module Fetcher = Obuilder.Docker$'
+    replace: 'module Fetcher = Obuilder.User_temp'
 
 - name: Install Opam dependencies
   shell: eval $(opam env) && opam install . -y --confirm-level=unsafe-yes

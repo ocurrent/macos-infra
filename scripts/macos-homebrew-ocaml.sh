@@ -1,6 +1,11 @@
-#!/bin/sh 
+#!/bin/sh
 
 set -e
+
+if [[ $# -eq 0 ]] ; then
+    echo 'Usage: $0 ocaml_version'
+    exit 1
+fi
 
 # Required as the access to /tmp is forbidden
 export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
@@ -14,12 +19,12 @@ echo "Installing vanilla homebrew"
 # echo "Install Opam 2.0 and 2.1"
 echo "Install Opam 2.1"
 # git clone -b 2.0 https://github.com/ocaml/opam ./opam
-# cd ./opam && make cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.0 && chmod a+x ~/local/bin/opam-2.0 && cd ../ && rm -rf ./opam 
+# cd ./opam && make cold && mkdir -p /usr/local/bin && cp ./opam /usr/local/bin/opam-2.0 && chmod a+x /usr/local/bin/opam-2.0 && cd ../ && rm -rf ./opam
 git clone -b 2.1 https://github.com/ocaml/opam ./opam
-cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p ~/local/bin && cp ./opam ~/local/bin/opam-2.1 && chmod a+x ~/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
+cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p /usr/local/bin && cp ./opam /usr/local/bin/opam-2.1 && chmod a+x /usr/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
 
 echo "Default link 2.1 to opam"
-ln ~/local/bin/opam-2.1 ~/local/bin/opam
+ln /usr/local/bin/opam-2.1 /usr/local/bin/opam
 
 echo "Check opam"
 opam --version
@@ -27,33 +32,8 @@ opam --version
 echo "Updating the .obuilder_profile.sh to pre-init OCaml"
 
 echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_profile.sh
-
-# Username is expected to match tho following pattern: mac[0-9]+-.+
-# With the suffix part being what is passed by the user in (from suffix)
-
-# I don't think we need this if we just create the user as macos-homebrew-ocaml-4.12
-# USER_SUFFIX=$(echo "$USER" | cut -d- -f2-)
-
-case "$1" in
-macos-homebrew-ocaml-4.14) echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh;; # /opt is used for homebrew on macOS/arm64
-*) echo "Distribution not supported"; exit 1;;
-esac
-
-case "$1" in
-macos-homebrew-ocaml-4.14) echo 'export PATH=/Users/administrator/ocaml/4.14.0/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.13) echo 'export PATH=/Users/administrator/ocaml/4.13.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.12) echo 'export PATH=/Users/administrator/ocaml/4.12.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.11) echo 'export PATH=/Users/administrator/ocaml/4.11.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.10) echo 'export PATH=/Users/administrator/ocaml/4.10.2/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.09) echo 'export PATH=/Users/administrator/ocaml/4.09.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.08) echo 'export PATH=/Users/administrator/ocaml/4.08.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.07) echo 'export PATH=/Users/administrator/ocaml/4.07.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.06) echo 'export PATH=/Users/administrator/ocaml/4.06.1/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.05) echo 'export PATH=/Users/administrator/ocaml/4.05.0/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.04) echo 'export PATH=/Users/administrator/ocaml/4.04.2/bin:$PATH' >> ./.obuilder_profile.sh;;
-macos-homebrew-ocaml-4.03) echo 'export PATH=/Users/administrator/ocaml/4.03.0/bin:$PATH' >> ./.obuilder_profile.sh;;
-*) echo "Can't find the ocaml version"; exit 1;;
-esac
+echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
+echo 'export PATH=/Volumes/'$1':/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # Add system compiler to path
 
 echo "Setting up opam"
 
@@ -63,7 +43,7 @@ source ./.obuilder_profile.sh
 
 git clone https://github.com/ocaml/opam-repository.git
 
-opam init -k git -a ./opam-repository
+opam init -k git -a ./opam-repository -c $1
 opam install -y opam-depext
 
 echo 'export OPAMYES=1' >> ./.obuilder_profile.sh

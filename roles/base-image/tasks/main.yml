@@ -1,5 +1,8 @@
 ---
 
+- set_fact:
+    short_version: "{{ version.split('.')[:2] | join('.') }}"
+
 - name: Download the source from GitHub
   git:
     repo: https://github.com/ocurrent/macos-infra
@@ -79,10 +82,10 @@
     group: admin
     recurse: yes
 
-- name: Run macos-homebrew-ocaml.sh script as user {{ user_name }}
+- name: Run macos-homebrew-ocaml.sh script as user {{ user_name }} for {{ short_version }}
   become: yes
   become_user: "{{ user_name }}"
-  shell: echo | ./macos-homebrew-ocaml.sh macos-homebrew-ocaml-4.14
+  shell: echo | ./macos-homebrew-ocaml.sh {{ version }}
   args:
     chdir: "/Users/{{ user_name }}"
     creates: "/Users/{{ user_name }}/opam-repository"
@@ -97,18 +100,18 @@
   become: yes
   shell: dscl . -delete /Users/{{ user_name }}
 
-- name: Remove /Users/macos-homebrew-ocaml-4.14
+- name: Remove old /Users/macos-homebrew-ocaml-{{ short_version }}
   become: yes
   file:
     state: absent
-    path: /Users/macos-homebrew-ocaml-4.14
+    path: /Users/macos-homebrew-ocaml-{{ short_version }}
 
-- name: Move /Users/{{ user_name }} to /Users/macos-homebrew-ocaml-4.14
+- name: Move /Users/{{ user_name }} to /Users/macos-homebrew-ocaml-{{ short_version }}
   become: yes
-  shell: "mv /Users/{{ user_name }} /Users/macos-homebrew-ocaml-4.14"
+  shell: "mv /Users/{{ user_name }} /Users/macos-homebrew-ocaml-{{ short_version }}"
   args:
     removes: "/Users/{{ user_name }}"
-    creates: "/Users/macos-homebrew-ocaml-4.14"
+    creates: "/Users/macos-homebrew-ocaml-{{ short_version }}"
 
 - name: Remove /Volumes/rsync
   become: yes
