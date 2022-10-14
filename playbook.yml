@@ -15,7 +15,7 @@
     - homebrew
     - ocaml
     - obuilder-fs
-    - { role: master-image, user_name: mac1000 }
+    - { role: base-image, user_name: mac1000 }
     - busybox
     - ocluster
   environment: 
