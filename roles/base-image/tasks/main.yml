@@ -37,7 +37,7 @@
   copy:
     dest: "/private/etc/sudoers.d/{{ user_name }}"
     content: |
-      %{{ user_name }} ALL=(ALL) NOPASSWD: ALL
+      {{ user_name }} ALL=(ALL) NOPASSWD: ALL
   become: yes
 
 - name: Create a symbolic link

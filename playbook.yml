@@ -2,7 +2,7 @@
 
 - hosts: all
   tasks:
-  - name: Create sudo file for admin
+  - name: Create sudo file for admin group
     copy:
       dest: "/private/etc/sudoers.d/admin"
       content: |
