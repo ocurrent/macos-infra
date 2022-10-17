@@ -76,8 +76,8 @@ module Build_op = struct
   let run ~job ocaml_version rsync_path sandbox_config =
     let open Lwt.Syntax in
     let ( / ) = Filename.concat in
-    let* (Store ((module Store), store)) =
-      Obuilder.Store_spec.to_store (`Rsync rsync_path)
+    let* (Obuilder.Store_spec.Store ((module Store), store)) =
+      Obuilder.Store_spec.to_store Copy (`Rsync rsync_path)
     in
     let module Builder = Obuilder.Builder (Store) (Sandbox) (Fetcher) in
     let* sandbox =

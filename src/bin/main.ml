@@ -113,8 +113,14 @@ let cmd =
   Cmd.v
     (Cmd.info "macos-base-image" ~doc)
     Term.(
-      const main $ setup_log $ Current.Config.cmdliner $ duration_term
-      $ Current_web.cmdliner $ docker_repo_term $ ov_term $ rsync_term
+      const main
+      $ setup_log
+      $ Current.Config.cmdliner
+      $ duration_term
+      $ Current_web.cmdliner
+      $ docker_repo_term
+      $ ov_term
+      $ rsync_term
       $ Obuilder.Sandbox.cmdliner)
 
 let () = Cmd.(exit @@ eval cmd)
