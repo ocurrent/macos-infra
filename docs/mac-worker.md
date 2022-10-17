@@ -58,7 +58,7 @@ Install Homebrew
 
 ```shell=
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+
 
 # Install Opam
 
@@ -211,7 +211,7 @@ eval $(opam env)
 
 ```shell=
 mkdir ~/lib
-sudo -E DYLD_FALLBACK_LIBRARY_PATH=/Users/administrator/lib dune exec --profile release -- ocluster-worker --connect ~/pool-macos-x86_64.cap \
+sudo -E DYLD_FALLBACK_LIBRARY_PATH=/Users/administrator/lib opam exec -- dune exec --profile release -- ocluster-worker --connect ~/pool-macos-x86_64.cap \
   --uid=1000 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard \
   --obuilder-store=rsync:/Volumes/rsync --state-dir=/var/lib/ocluster-worker \
   --name=`hostname` --capacity=1 --obuilder-prune-threshold=10 --verbosity=info

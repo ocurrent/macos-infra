@@ -29,6 +29,7 @@
     name:
       - opam
       - pkg-config
+      - tmux
     state: present
   register: result
   until: result is successful
