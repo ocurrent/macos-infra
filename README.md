@@ -17,6 +17,7 @@ This document tells the ongoing story of supporting macOS in OCaml's Continuous 
 - [OCluster macOS Worker](#ocluster-macos-worker)
     - [Building a macOS Base Directory](#building-a-macos-base-directory)
 - [Ansible Playbook](#ansible-playbook)
+- [Starting and Stopping](#start-stop)
 - [Current Deployment and Future Steps](#current-deployment-and-future-steps)
 - [Thanks](#thanks)
 
@@ -154,6 +155,26 @@ Run the playbook as follows.  I have used `--limit` to target a single worker.
 ```sh=
 ansible-playbook -i hosts --limit mac-mon-2 playbook.yml
 ```
+
+## Starting and Stopping
+
+Ocluster-worker is run via LaunchAgent.
+
+The Ansible scripts create a service definition `.plist` in `~/Library/LaunchAgents/com.tarides.ocluster.worker.plist`.
+
+To start the service run
+
+```shell=
+launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+To stop the service run
+
+```shell=
+launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+STDOUT and STDERR are redirected to `~/ocluster.log`
 
 ## Current Deployment and Future Steps
 

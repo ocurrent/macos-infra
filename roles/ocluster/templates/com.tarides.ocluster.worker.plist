@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>com.tarides.ocluster.worker</string>
+	<key>LimitLoadToSessionType</key>
+	<array>
+		<string>Aqua</string>
+		<string>Background</string>
+		<string>LoginWindow</string>
+		<string>StandardIO</string>
+		<string>System</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+                <key>PATH</key>
+                <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+                <string>sudo</string>
+                <string>opam</string>
+                <string>exec</string>
+                <string>--</string>
+                <string>dune</string>
+                <string>exec</string>
+                <string>--profile</string>
+                <string>release</string>
+                <string>--</string>
+                <string>ocluster-worker</string>
+                <string>--connect</string>
+                <string>/Users/administrator/pool-macos-x86_64.cap</string>
+                <string>--uid=1000</string>
+                <string>--fallback=/Users/administrator/lib</string>
+                <string>--scoreboard=/Users/administrator/scoreboard</string>
+                <string>--obuilder-store=rsync:/Volumes/rsync</string>
+                <string>--state-dir=/var/lib/ocluster-worker</string>
+                <string>--name={{ ansible_host }}</string>
+                <string>--capacity=1</string>
+                <string>--obuilder-prune-threshold=10</string>
+                <string>--verbosity=info</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/administrator/ocluster.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/administrator/ocluster.log</string>
+	<key>WorkingDirectory</key>
+	<string>/Users/administrator/ocluster</string>
+</dict>
+</plist>
+

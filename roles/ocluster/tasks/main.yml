@@ -1,5 +1,13 @@
 ---
 
+- name: Create plist service file
+  template:
+    src: com.tarides.ocluster.worker.plist
+    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/com.tarides.ocluster.worker.plist"
+
+- name: Stop ocluster via launchctl
+  shell: launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+
 - name: Download the source from GitHub
   git:
     repo: https://github.com/ocurrent/ocluster.git
@@ -26,11 +34,11 @@
 #   args:
 #     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
-# - name: Update Fetcher variable to User_temp
-#   replace:
-#     path: "{{ ansible_env.HOME }}/ocluster/worker/obuilder_build.ml"
-#     regexp: '^module Fetcher = Obuilder.Docker$'
-#     replace: 'module Fetcher = Obuilder.User_temp'
+- name: Update Fetcher variable to User_temp
+  replace:
+    path: "{{ ansible_env.HOME }}/ocluster/worker/obuilder_build.ml"
+    regexp: '^module Fetcher = Obuilder.Docker$'
+    replace: 'module Fetcher = Obuilder.User_temp'
 
 - name: Install Opam dependencies
   shell: eval $(opam env) && opam install . -y --confirm-level=unsafe-yes
@@ -43,4 +51,6 @@
     dest: "{{ ansible_env.HOME }}/pool-macos-x86_64.cap"
     mode: '0400'
 
+- name: Start ocluster via launchctl
+  shell: launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
