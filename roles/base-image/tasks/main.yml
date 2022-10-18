@@ -29,9 +29,19 @@
   register: user_check
   failed_when: user_check.rc == -1
 
+- name: Delete user {{ user_name }} if it exists
+  shell: dscl . -delete /Users/{{ user_name }}
+  when: user_check.rc == 0
+  become: yes
+
+- name: Remove any /Users/{{ user_name }}
+  become: yes
+  file:
+    state: absent
+    path: /Users/{{ user_name }}
+
 - name: Create user {{ user_name }}
   shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 {{ user_name }}"
-  when: user_check.rc != 0
 
 - name: Create sudo file for {{ user_name }}
   copy:
