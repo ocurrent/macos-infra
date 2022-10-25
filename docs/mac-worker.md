@@ -1,16 +1,18 @@
 
-# Set up Remote Login on your Mac
+# MacOS configuration
 
-On your Mac, choose Apple menu  > System Preferences, click Sharing , then select Remote Login.
-Select the Remote Login checkbox.
-If needed, select the “Allow full disk access for remote users” checkbox.
-Specify which users can log in:
-All users: Any of your computer’s users and anyone on your network can log in.
-Only these users: Click the Add button , then choose who can log in remotely. Users & Groups includes all the users of your Mac. Network Users and Network Groups include people on your network.
+- Security & Privacy \ General \ Require Password
+- Users & Groups \ Login Options \ Automatic login as administrator
+- Sharing \ Screen sharing
+- Sharing \ Remote login
+- Energy Saver \ Prevent your Mac from automatically sleeping
+- Energy Saver \ Start up automatically after power failure
+- Install Apple Developer Command line tools
+- Turn off SIP by entering Recovery Mode (Intel: Command-R; M1: hold power button) `csrutil disable`
 
 # macFuse
 
-Via a VNC session, install the latest version, currently 4.3.1, from [macFUSE](https://osxfuse.github.io) which requires a reboot
+Via a VNC session, install the latest version, currently 4.4.1, from [macFUSE](https://osxfuse.github.io) which requires a reboot
 
 # Docker
 
@@ -19,6 +21,8 @@ Via a VNC session, install the latest version, currently 4.3.1, from [macFUSE](h
 Download and install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/).
 
 Open the Docker app from Applications and authorise it to make changes to the system networking.
+
+Set Docker desktop to start automatiaclly when a user signs in
 
 # Remove password requirement for SUDO
 
@@ -40,9 +44,9 @@ chmod 600 ~/.ssh/authorized_keys
 # Rename the Mac to something sensible
 
 ```
-sudo scutil --set HostName mac-mon-4
-sudo scutil --set LocalHostName mac-mon-4
-sudo scutil --set ComputerName mac-mon-4
+sudo scutil --set HostName i7-worker-01
+sudo scutil --set LocalHostName i7-worker-01
+sudo scutil --set ComputerName i7-worker-01
 dscacheutil -flushcache
 ```
 

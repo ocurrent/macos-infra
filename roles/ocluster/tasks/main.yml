@@ -1,5 +1,10 @@
 ---
 
+- name: Ensure LaunchAgents folder exists
+  file:
+    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
+    state: directory
+
 - name: Create plist service file
   template:
     src: com.tarides.ocluster.worker.plist
@@ -50,6 +55,11 @@
     src: "secrets/pool-macos-x86_64.cap"
     dest: "{{ ansible_env.HOME }}/pool-macos-x86_64.cap"
     mode: '0400'
+
+- name: Ensure ~/lib exists
+  file:
+    path: "{{ ansible_env.HOME }}/lib"
+    state: directory
 
 - name: Start ocluster via launchctl
   shell: launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
