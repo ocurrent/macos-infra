@@ -56,24 +56,41 @@
     dest: "{{ ansible_env.HOME }}/scoreboard/1000"
     state: link
 
-- name: Create /Users/{{ user_name }}/local -- this should be created by new-user.sh
+- name: Unmount {{ homebrew_prefix }} if it is mounted
+  become: yes
+  mount:
+    path: "{{ homebrew_prefix }}"
+    state: unmounted
+
+- name: Create /Users/{{ user_name }}/local and homebrew subfolders
   file:
-    path: /Users/{{ user_name }}/local
+    path: "{{ item }}"
     state: directory
     mode: '0755'
     owner: "{{ user_name }}"
     group: admin
   become: yes
+  with_items:
+    - "/Users/{{ user_name }}/local"
+    - "/Users/{{ user_name }}/local/bin"
+    - "/Users/{{ user_name }}/local/etc"
+    - "/Users/{{ user_name }}/local/include"
+    - "/Users/{{ user_name }}/local/lib"
+    - "/Users/{{ user_name }}/local/sbin"
+    - "/Users/{{ user_name }}/local/share"
+    - "/Users/{{ user_name }}/local/var"
+    - "/Users/{{ user_name }}/local/opt"
+    - "/Users/{{ user_name }}/local/share/zsh"
+    - "/Users/{{ user_name }}/local/share/zsh/site-functions"
+    - "/Users/{{ user_name }}/local/var/homebrew"
+    - "/Users/{{ user_name }}/local/var/homebrew/linked"
+    - "/Users/{{ user_name }}/local/Cellar"
+    - "/Users/{{ user_name }}/local/Caskroom"
+    - "/Users/{{ user_name }}/local/Frameworks"
 
-- name: Unmount /usr/local if it is mounted
+- name: mount {{ homebrew_prefix }}
   become: yes
-  mount:
-    path: /usr/local
-    state: unmounted
-
-- name: mount /usr/local
-  become: yes
-  shell: obuilderfs {{ ansible_env.HOME }}/scoreboard /usr/local -o allow_other
+  shell: obuilderfs {{ ansible_env.HOME }}/scoreboard {{ homebrew_prefix }} -o allow_other
 
 - name: Copy file setup script
   become: yes
@@ -84,26 +101,25 @@
     dest: /Users/{{ user_name }}/macos-homebrew-ocaml.sh
     mode: u+rwx,g+rx,o+rx
 
-- name: chown /Users/{{ user_name }} just to be sure
+- name: Test
   become: yes
-  file:
-    dest: "/Users/{{ user_name }}"
-    owner: "{{ user_name }}"
-    group: admin
-    recurse: yes
+  become_user: "{{ user_name }}"
+  shell: ls -l /opt/homebrew
+  args:
+    chdir: "/Users/{{ user_name }}"
 
 - name: Run macos-homebrew-ocaml.sh script as user {{ user_name }} for {{ short_version }}
   become: yes
   become_user: "{{ user_name }}"
-  shell: echo | ./macos-homebrew-ocaml.sh {{ version }}
+  shell: ./macos-homebrew-ocaml.sh {{ version }}
   args:
     chdir: "/Users/{{ user_name }}"
     creates: "/Users/{{ user_name }}/opam-repository"
 
-- name: Unmount /usr/local if it is mounted
+- name: Unmount {{ homebrew_prefix }} if it is mounted
   become: yes
   mount:
-    path: /usr/local
+    path: "{{ homebrew_prefix }}"
     state: unmounted
 
 - name: Delete user {{ user_name }}

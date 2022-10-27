@@ -20,24 +20,24 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 376d1fea0d832f9b0b1c947a0fc569cb870d3910
+  shell: git fetch origin master && git checkout 376d1fea0d832f9b0b1c947a0fc569cb870d3910 --recurse-submodules
   args: 
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
-# - name: Download the source from GitHub
-#   shell: git fetch origin refs/pull/193/head && git reset --hard 104b505
-#   args:
-#     chdir: "{{ ansible_env.HOME }}/ocluster"
+- name: Checkout the correct SHA
+  shell: git fetch origin master && git checkout 376d1fea0d832f9b0b1c947a0fc569cb870d3910 --recurse-submodules
+  args: 
+    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
-# - name: Add remote obuilder
-#   shell: git remote add misterda https://github.com/MisterDA/obuilder.git && git fetch --all
-#   args:
-#     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
+ - name: Add remote obuilder
+   shell: git remote add mtelvers https://github.com/mtelvers/obuilder.git && git fetch --all
+   args:
+     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
-# - name: Checkout the correct SHA
-#   shell: git checkout 20229cbdae4dc55b3f1ca5e68c6c48e337dd91d7
-#   args:
-#     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
+ - name: Checkout the correct SHA
+   shell: git checkout 1b917744cb6959b889dcea3e68a586f4d5261d03
+   args:
+     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Update Fetcher variable to User_temp
   replace:
@@ -52,8 +52,8 @@
 
 - name: Copy pool capability
   copy:
-    src: "secrets/pool-macos-x86_64.cap"
-    dest: "{{ ansible_env.HOME }}/pool-macos-x86_64.cap"
+    src: "secrets/pool-macos-{{ ansible_architecture }}.cap"
+    dest: "{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap"
     mode: '0400'
 
 - name: Ensure ~/lib exists

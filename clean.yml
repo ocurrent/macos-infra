@@ -21,6 +21,12 @@
       path: /usr/local
       state: unmounted
 
+  - name: Unmount /opt/homebrew if it is mounted
+    become: yes
+    mount:
+      path: /opt/homebrew
+      state: unmounted
+
   - name: Remove /Users/{{ user_name }}
     become: yes
     file:

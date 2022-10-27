@@ -1,35 +1,22 @@
 ---
 
-- set_fact: homebrew_check=false
-
-- name: Ensuring Homebrew Is Installed (intel)
+- name: Check if Homebrew is installed in {{ homebrew_prefix }}/bin/brew
   stat:
-    path: /usr/local/bin/brew
-  register: homebrew_check_intel
-
-- name: Ensuring Homebrew Is Installed (m1)
-  stat:
-    path: /opt/homebrew/bin/brew
-  register: homebrew_check_m1
-
-- set_fact: homebrew_check=true
-  when: homebrew_check_intel.stat.exists
-
-- set_fact: homebrew_check=true
-  when: homebrew_check_m1.stat.exists
+    path: "{{ homebrew_prefix }}/bin/brew"
+  register: homebrew_check
 
 - name: Installing Homebrew
   shell: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   when:
-    - not homebrew_check
+    - not homebrew_check.stat.exists
 
-- name: Add /opt/homebrew/bin to the default system path
+- name: Add {{ homebrew_prefix }}/bin to the default system path
   copy:
     dest: "/private/etc/paths.d/homebrew"
     content: |
-      /opt/homebrew/bin
+      {{ homebrew_prefix }}/bin
   become: yes
-  when: homebrew_check_m1.stat.exists
+  when: homebrew_check.stat.exists
 
 - name: Installing Homebrew Packages
   homebrew:
@@ -40,17 +27,17 @@
   register: result
   until: result is successful
   when:
-    - not homebrew_check
+    - not homebrew_check.stat.exists
 
 - name: Updating Homebrew
   homebrew:
     update_homebrew: true
-  when: homebrew_check
+  when: homebrew_check.stat.exists
 
 - name: Upgrading Homebrew Packages
   homebrew:
     upgrade_all: true
   register: result
   until: result is successful
-  when: homebrew_check
+  when: homebrew_check.stat.exists
 

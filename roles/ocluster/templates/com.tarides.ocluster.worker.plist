@@ -17,7 +17,7 @@
 	<key>EnvironmentVariables</key>
 	<dict>
                 <key>PATH</key>
-                <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+                <string>{{ homebrew_prefix }}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 	</dict>
 	<key>ProgramArguments</key>
 	<array>
@@ -32,9 +32,10 @@
                 <string>--</string>
                 <string>ocluster-worker</string>
                 <string>--connect</string>
-                <string>/Users/administrator/pool-macos-x86_64.cap</string>
+                <string>/Users/administrator/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
                 <string>--fallback=/Users/administrator/lib</string>
+                <string>--fuse_path={{ homebrew_prefix }}</string>
                 <string>--scoreboard=/Users/administrator/scoreboard</string>
                 <string>--obuilder-store=rsync:/Volumes/rsync</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>

@@ -11,7 +11,10 @@ fi
 export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
 
 echo "Installing vanilla homebrew"
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+/usr/libexec/path_helper
+export homebrew=$(brew --prefix)
 
 # echo "Install Lock-free Homebrew (maybe needed for parallel support)"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
@@ -19,12 +22,12 @@ echo "Installing vanilla homebrew"
 # echo "Install Opam 2.0 and 2.1"
 echo "Install Opam 2.1"
 # git clone -b 2.0 https://github.com/ocaml/opam ./opam
-# cd ./opam && make cold && mkdir -p /usr/local/bin && cp ./opam /usr/local/bin/opam-2.0 && chmod a+x /usr/local/bin/opam-2.0 && cd ../ && rm -rf ./opam
+# cd ./opam && make cold && mkdir -p $homebrew/bin && cp ./opam $homebrew/bin/opam-2.0 && chmod a+x $homebrew/bin/opam-2.0 && cd ../ && rm -rf ./opam
 git clone -b 2.1 https://github.com/ocaml/opam ./opam
-cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p /usr/local/bin && cp ./opam /usr/local/bin/opam-2.1 && chmod a+x /usr/local/bin/opam-2.1 && cd ../ && rm -rf ./opam
+cd ./opam && make CONFIGURE_ARGS=--with-0install-solver cold && mkdir -p $homebrew/bin && cp ./opam $homebrew/bin/opam-2.1 && chmod a+x $homebrew/bin/opam-2.1 && cd ../ && rm -rf ./opam
 
 echo "Default link 2.1 to opam"
-ln /usr/local/bin/opam-2.1 /usr/local/bin/opam
+ln $homebrew/bin/opam-2.1 $homebrew/bin/opam
 
 echo "Check opam"
 opam --version
