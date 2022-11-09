@@ -9,6 +9,10 @@
         %admin ALL=(ALL) NOPASSWD: ALL
     become: yes
 
+  - name: Turn off Spotlight and Indexes for all volumes
+    shell: mdutil -i off -d -a
+    become: yes
+
 - hosts: all
   tasks:
   - name: Check architecture intel
