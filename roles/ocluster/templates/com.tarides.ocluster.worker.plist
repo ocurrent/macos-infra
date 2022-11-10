@@ -39,7 +39,7 @@
                 <string>--scoreboard=/Users/administrator/scoreboard</string>
                 <string>--obuilder-store=rsync:/Volumes/rsync</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
-                <string>--name={{ ansible_host }}</string>
+                <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
                 <string>--obuilder-prune-threshold=10</string>
                 <string>--verbosity=info</string>

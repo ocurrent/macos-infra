@@ -1,0 +1,49 @@
+---
+
+- hosts: all
+  tasks:
+  - name: Check architecture intel
+    set_fact: homebrew_prefix="/usr/local"
+    when: ansible_architecture == "x86_64"
+
+  - name: Check architecture arm
+    set_fact: homebrew_prefix="/opt/homebrew"
+    when: ansible_architecture == "arm64"
+
+  - debug:
+      var: homebrew_prefix
+
+- hosts: all
+  tasks:
+
+  - name: Pause the worker
+    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+
+  - name: Stop the ocluster service
+    shell: launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
+    become: yes
+
+  - name: Unmount {{ homebrew_prefix }} if it is mounted
+    become: yes
+    mount:
+      path: "{{ homebrew_prefix }}"
+      state: unmounted
+
+  - name: Create empty folder
+    file:
+      state: directory
+      path: /tmp/obuilder-empty 
+
+  - name: Use rsync to delete everything in result-tmp
+    shell: rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
+    become: yes
+
+  - name: Start ocluster service
+    shell: launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
+    become: yes
+
+  - name: Unpause the worker
+    shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+

@@ -197,11 +197,20 @@ mkdir /tmp/obuilder-empty
 sudo rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
 
 # Unmount homebrew redirection, otherwise ocluster.worker will not find 
-# its dependencies
+# its dependencies.  Either /opt/homebrew on m1 or /usr/local on Intel
 sudo umount /opt/homebrew
+sudo umount /usr/local
 
 # Restart the service
 launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+Check the playbook `flush-rsync.yml` which automatically performs these steps:
+
+```
+ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev flush-rsync.yml
+```
+
 ## Current Deployment and Future Steps
 
 Currently the macOS workers have been used in [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci/pull/116) although at the time of writing it is currently disabled. This is because the macOS machines still need frequent manual fixing and updating which I didn't have time for, the following steps are what is probably needed at a bare minimum to get things up and running in a more stable state.
