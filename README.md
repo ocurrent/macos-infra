@@ -182,7 +182,26 @@ launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ```
 
 STDOUT and STDERR are redirected to `~/ocluster.log`
+## Clearing disk space
 
+Sometimes the rsync cache fills up and needs manual intervention. In that case run:
+
+``` shell
+# Stop the service
+launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
+
+# Create an empty directory (may already exist)
+mkdir /tmp/obuilder-empty 
+
+# Rsync an empty directory to result-tmp
+sudo rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
+
+# Unmount homebrew redirection, otherwise ocluster.worker will not find 
+# its dependencies
+sudo umount /opt/homebrew
+
+# Restart the service
+launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ## Current Deployment and Future Steps
 
 Currently the macOS workers have been used in [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci/pull/116) although at the time of writing it is currently disabled. This is because the macOS machines still need frequent manual fixing and updating which I didn't have time for, the following steps are what is probably needed at a bare minimum to get things up and running in a more stable state.
