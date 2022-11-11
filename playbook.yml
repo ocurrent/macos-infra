@@ -1,0 +1,46 @@
+---
+
+- hosts: all
+  tasks:
+  - name: Create sudo file for admin group
+    copy:
+      dest: "/private/etc/sudoers.d/admin"
+      content: |
+        %admin ALL=(ALL) NOPASSWD: ALL
+    become: yes
+
+  - name: Turn off Spotlight indexes for all volumes
+    shell: mdutil -i off -d -a
+    become: yes
+
+  - name: Unload Spotlight service
+    shell: launchctl unload -w /System/Library/LaunchDaemons/com.apple.metadata.mds.plist
+    become: yes
+
+- hosts: all
+  tasks:
+  - name: Check architecture intel
+    set_fact: homebrew_prefix="/usr/local"
+    when: ansible_architecture == "x86_64"
+
+  - name: Check architecture arm
+    set_fact: homebrew_prefix="/opt/homebrew"
+    when: ansible_architecture == "arm64"
+
+  - debug:
+      var: homebrew_prefix
+
+- hosts: all
+  name: Install Roles
+  roles:
+    - homebrew
+    - ocaml
+   # - { role: sysinstall, versions: "4.14.0,5.0.0~beta1" }
+    - obuilder-fs
+    - { role: base-image, version: "4.14.0", user_name: mac1000 }
+    - { role: base-image, version: "5.0.0~beta1", user_name: mac1000 }
+    - busybox
+    - ocluster
+  environment:
+    PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+

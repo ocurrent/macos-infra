@@ -16,6 +16,8 @@ This document tells the ongoing story of supporting macOS in OCaml's Continuous 
     - [Docker-esque Base Images](#docker-esque-base-images)
 - [OCluster macOS Worker](#ocluster-macos-worker)
     - [Building a macOS Base Directory](#building-a-macos-base-directory)
+- [Ansible Playbook](#ansible-playbook)
+- [Starting and Stopping](#start-stop)
 - [Current Deployment and Future Steps](#current-deployment-and-future-steps)
 - [Thanks](#thanks)
 
@@ -132,6 +134,82 @@ CMD [ "/bin/bash" ]
 ```
 
 And push the image.
+
+## Ansible Playbook
+
+The Ansible playbook can be used to deploy Mac workers.  The following pre-requisites should be satisfied:
+
+- Security & Privacy \ General \ Require Password -- disables screen saver
+- Users & Groups \ Login Options \ Automatic login as administrator
+- Sharing \ Screen sharing -- enables VNC
+- Sharing \ Remote login -- enables SSH.  Also select the “Allow full disk access for remote users” checkbox.
+- Energy Saver \ Prevent your Mac from automatically sleeping
+- Energy Saver \ Start up automatically after power failure
+- Install Apple Developer Command line tools
+- Turn off SIP by entering Recovery Mode (Intel: Command-R; M1: hold power button) `csrutil disable`
+- Install [macFUSE](https://osxfuse.github.io) which requires approval via System Preferences and a reboot of the system.
+- Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
+- Set Docker to automatically start at sign in
+- Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
+
+```
+Host mac-mon-*
+	User administrator
+```
+
+Run the playbook as follows.  I have used `--limit` to target a single worker.
+
+```sh=
+ansible-playbook -i hosts --limit i7-worker-01 playbook.yml
+```
+
+## Starting and Stopping
+
+Ocluster-worker is run via LaunchAgent.
+
+The Ansible scripts create a service definition `.plist` in `~/Library/LaunchAgents/com.tarides.ocluster.worker.plist`.
+
+To start the service run
+
+```shell=
+launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+To stop the service run
+
+```shell=
+launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+STDOUT and STDERR are redirected to `~/ocluster.log`
+## Clearing disk space
+
+Sometimes the rsync cache fills up and needs manual intervention. In that case run:
+
+``` shell
+# Stop the service
+launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
+
+# Create an empty directory (may already exist)
+mkdir /tmp/obuilder-empty 
+
+# Rsync an empty directory to result-tmp
+sudo rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
+
+# Unmount homebrew redirection, otherwise ocluster.worker will not find 
+# its dependencies.  Either /opt/homebrew on m1 or /usr/local on Intel
+sudo umount /opt/homebrew
+sudo umount /usr/local
+
+# Restart the service
+launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
+```
+
+Check the playbook `flush-rsync.yml` which automatically performs these steps:
+
+```
+ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev flush-rsync.yml
+```
 
 ## Current Deployment and Future Steps
 

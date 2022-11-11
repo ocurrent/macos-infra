@@ -1,0 +1,38 @@
+---
+
+- name: Create directory for busybox profile
+  become: yes
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: '0775'
+  loop:
+    - /Users/busybox
+    - /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/rootfs
+
+- name: Create profile for busybox
+  copy:
+    dest: "{{ item }}"
+    content: |
+      export HOMEBREW_DISABLE_LOCKING=1
+      export HOMEBREW_NO_AUTO_UPDATE=1
+      export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
+      export OPAMYES=1
+      export OPAMCONFIRMLEVEL=unsafe-yes
+      export OPAMERRLOGLEN=0
+      export OPAMPRECISETRACKING=1
+  become: yes
+  loop:
+    - /Users/busybox/.obuilder_profile.sh
+    - /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/rootfs/.obuilder_profile.sh
+
+- name: Create env file
+  copy:
+    dest: /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/env
+    content: |
+      ((env ()))
+    mode: '0664'
+    group: staff
+  become: yes
+

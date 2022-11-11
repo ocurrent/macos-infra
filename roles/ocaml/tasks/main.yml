@@ -1,0 +1,11 @@
+---
+
+- name: Initialise opam
+  shell: opam init -y
+
+- name: Update Opam
+  shell: opam update && opam upgrade -y
+
+- name: Install Dune
+  shell: eval $(opam env) && opam install dune
+

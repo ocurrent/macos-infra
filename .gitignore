@@ -2,3 +2,5 @@ env
 _build
 .vscode
 var
+secrets
+.*.sw?

@@ -1,0 +1,47 @@
+---
+
+- hosts: all
+  vars:
+    user_name: mac1000
+  tasks:
+
+  - name: Check for user {{ user_name }}
+    shell: dscl . read /Users/{{ user_name }}
+    register: user_check
+    failed_when: user_check.rc == -1
+
+  - name: Delete user {{ user_name }}
+    become: yes
+    shell: dscl . -delete /Users/{{ user_name }}
+    when: user_check.rc == 0
+
+  - name: Unmount /usr/local if it is mounted
+    become: yes
+    mount:
+      path: /usr/local
+      state: unmounted
+
+  - name: Unmount /opt/homebrew if it is mounted
+    become: yes
+    mount:
+      path: /opt/homebrew
+      state: unmounted
+
+  - name: Remove /Users/{{ user_name }}
+    become: yes
+    file:
+      state: absent
+      path: /Users/{{ user_name }}
+
+  - name: Remove /Users/busybox
+    become: yes
+    file:
+      state: absent
+      path: /Users/busybox
+
+  - name: Remove ocluster
+    become: yes
+    file:
+      path: "{{ ansible_env.HOME }}/ocluster"
+      state: absent
+
