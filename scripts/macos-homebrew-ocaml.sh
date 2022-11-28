@@ -16,6 +16,10 @@ NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Ho
 /usr/libexec/path_helper
 export homebrew=$(brew --prefix)
 
+# Git included in Apple Developer Tools is version 2.37.1
+# Brew has version 2.38.1
+brew install git
+
 # echo "Install Lock-free Homebrew (maybe needed for parallel support)"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
