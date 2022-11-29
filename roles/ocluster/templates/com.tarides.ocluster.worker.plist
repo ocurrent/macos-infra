@@ -35,7 +35,7 @@
                 <string>/Users/administrator/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
                 <string>--fallback=/Users/administrator/lib</string>
-                <string>--fuse_path={{ homebrew_prefix }}</string>
+                <string>--fuse-path={{ homebrew_prefix }}</string>
                 <string>--scoreboard=/Users/administrator/scoreboard</string>
                 <string>--obuilder-store=rsync:/Volumes/rsync</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>

@@ -16,9 +16,9 @@
 - hosts: all
   tasks:
 
-  - name: Pause the worker
-    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
-    delegate_to: 127.0.0.1
+#  - name: Pause the worker
+#    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+#    delegate_to: 127.0.0.1
 
   - name: Stop the ocluster service
     shell: launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist

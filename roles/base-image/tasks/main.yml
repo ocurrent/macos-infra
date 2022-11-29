@@ -104,7 +104,7 @@
 - name: Test
   become: yes
   become_user: "{{ user_name }}"
-  shell: ls -l /opt/homebrew
+  shell: ls -l {{ homebrew_prefix }}
   args:
     chdir: "/Users/{{ user_name }}"
 

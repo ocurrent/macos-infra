@@ -20,24 +20,9 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 376d1fea0d832f9b0b1c947a0fc569cb870d3910 --recurse-submodules
+  shell: git fetch origin master && git checkout fcadac0bbd967495cb0ed17a6a2c722e333e4f3a --recurse-submodules
   args: 
     chdir: "{{ ansible_env.HOME }}/ocluster"
-
-- name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 376d1fea0d832f9b0b1c947a0fc569cb870d3910 --recurse-submodules
-  args: 
-    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
-
- - name: Add remote obuilder
-   shell: git remote add mtelvers https://github.com/mtelvers/obuilder.git && git fetch --all
-   args:
-     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
-
- - name: Checkout the correct SHA
-   shell: git checkout 1b917744cb6959b889dcea3e68a586f4d5261d03
-   args:
-     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Update Fetcher variable to User_temp
   replace:
