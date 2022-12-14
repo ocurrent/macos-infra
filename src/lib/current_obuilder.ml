@@ -77,7 +77,8 @@ module Build_op = struct
     let open Lwt.Syntax in
     let ( / ) = Filename.concat in
     let* (Obuilder.Store_spec.Store ((module Store), store)) =
-      Obuilder.Store_spec.to_store Copy (`Rsync rsync_path)
+      Obuilder.Store_spec.to_store
+        (`Rsync (rsync_path, Obuilder.Rsync_store.Copy))
     in
     let module Builder = Obuilder.Builder (Store) (Sandbox) (Fetcher) in
     let* sandbox =
