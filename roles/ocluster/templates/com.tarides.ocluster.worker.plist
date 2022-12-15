@@ -38,6 +38,7 @@
                 <string>--fuse-path={{ homebrew_prefix }}</string>
                 <string>--scoreboard=/Users/administrator/scoreboard</string>
                 <string>--obuilder-store=rsync:/Volumes/rsync</string>
+		<string>--rsync-mode=hardlink</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
