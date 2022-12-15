@@ -22,22 +22,14 @@
 	<key>ProgramArguments</key>
 	<array>
                 <string>sudo</string>
-                <string>opam</string>
-                <string>exec</string>
-                <string>--</string>
-                <string>dune</string>
-                <string>exec</string>
-                <string>--profile</string>
-                <string>release</string>
-                <string>--</string>
-                <string>ocluster-worker</string>
+                <string>./_build/install/default/bin/ocluster-worker</string>
                 <string>--connect</string>
                 <string>/Users/administrator/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
                 <string>--fallback=/Users/administrator/lib</string>
                 <string>--fuse-path={{ homebrew_prefix }}</string>
                 <string>--scoreboard=/Users/administrator/scoreboard</string>
-                <string>--obuilder-store=rsync:/Volumes/rsync</string>
+                <string>--store=rsync:/Volumes/rsync</string>
 		<string>--rsync-mode=hardlink</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>

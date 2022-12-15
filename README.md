@@ -205,7 +205,12 @@ sudo umount /usr/local
 launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ```
 
-Check the playbook `flush-rsync.yml` which automatically performs these steps:
+Check the playbook `flush-rsync.yml` which automatically performs these steps including:
+* Pausing the worker in the pool
+* Unloading the worker service
+* Update the OCluster code from GitHub
+* Loading the worker service
+* Unpausing the worker in the pool
 
 ```
 ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev flush-rsync.yml

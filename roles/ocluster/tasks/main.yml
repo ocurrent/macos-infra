@@ -13,16 +13,26 @@
 - name: Stop ocluster via launchctl
   shell: launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
+- name: Remove ~/ocluster
+  file:
+    path: "{{ ansible_env.HOME }}/ocluster"
+    state: absent
+
 - name: Download the source from GitHub
   git:
     repo: https://github.com/ocurrent/ocluster.git
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
-- name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout fcadac0bbd967495cb0ed17a6a2c722e333e4f3a --recurse-submodules
-  args: 
+- name: Switch to Tim's PR
+  shell: git fetch origin pull/202/head:test-branch && git checkout test-branch
+  args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
+
+- name: Update Obuilder
+  shell: git fetch && git checkout master
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
 - name: Update Fetcher variable to User_temp
   replace:
@@ -31,7 +41,12 @@
     replace: 'module Fetcher = Obuilder.User_temp'
 
 - name: Install Opam dependencies
-  shell: eval $(opam env) && opam install . -y --confirm-level=unsafe-yes
+  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
+- name: Dune build
+  shell: eval $(opam env) && dune build
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
