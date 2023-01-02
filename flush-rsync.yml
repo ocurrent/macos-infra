@@ -41,6 +41,16 @@
       state: absent
       path: "{{ ansible_env.HOME }}/ocluster.log"
 
+  - name: Remove ocluster
+    file:
+      state: absent
+      path: "{{ ansible_env.HOME }}/ocluster"
+
+  - name: Remove opam
+    file:
+      state: absent
+      path: "{{ ansible_env.HOME }}/.opam"
+
   - name: Create empty folder
     file:
       state: directory
@@ -50,14 +60,39 @@
     shell: rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/
     become: yes
 
+  - name: Install Opam
+    import_role:
+      name: ocaml
+    environment:
+      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+#  - name: Create base image 4.14.0
+#    import_role:
+#      name: base-image
+#    vars:
+#      version: "4.14.0"
+#      user_name: "mac1000"
+#    environment:
+#      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+#  - name: Create base image 5.0.0
+#    import_role:
+#      name: base-image
+#    vars:
+#      version: "5.0.0"
+#      user_name: "mac1000"
+#    environment:
+#      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
   - name: Update OCluster
     import_role:
       name: ocluster
     environment:
       PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Start ocluster service
-    shell: launchctl load {{ ansible_env.HOME}}/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+# the service is started above ocluster role
+#  - name: Start ocluster service
+#    shell: launchctl load {{ ansible_env.HOME}}/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
   - name: Unpause the worker
     shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}

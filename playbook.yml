@@ -35,10 +35,10 @@
   roles:
     - homebrew
     - ocaml
-   # - { role: sysinstall, versions: "4.14.0,5.0.0~rc1" }
+   # - { role: sysinstall, versions: "4.14.0,5.0.0" }
     - obuilder-fs
     - { role: base-image, version: "4.14.0", user_name: mac1000 }
-    - { role: base-image, version: "5.0.0~rc1", user_name: mac1000 }
+    - { role: base-image, version: "5.0.0", user_name: mac1000 }
     - busybox
     - ocluster
   environment:
