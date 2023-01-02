@@ -24,8 +24,8 @@
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
-- name: Switch to Tim's PR
-  shell: git fetch origin pull/202/head:test-branch && git checkout test-branch
+- name: Checkout the correct SHA
+  shell: git fetch origin master && git checkout f2a94b163f763d57a4a63614a62b39c1020e53e7 --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
