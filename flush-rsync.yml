@@ -14,15 +14,15 @@
       var: homebrew_prefix
 
 - hosts: all
+  serial: 1
   tasks:
 
-#  - name: Pause the worker
-#    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
-#    delegate_to: 127.0.0.1
+  - name: Pause the worker
+    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
 
   - name: Stop the ocluster service
-    shell: launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
-    become: yes
+    shell: launchctl unload {{ ansible_env.HOME}}/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
   - name: Unmount {{ homebrew_prefix }} if it is mounted
     become: yes
@@ -30,18 +30,69 @@
       path: "{{ homebrew_prefix }}"
       state: unmounted
 
+  - name: Remove state dir
+    become: yes
+    file:
+      state: absent
+      path: /var/lib/ocluster-worker
+
+  - name: Remove ocluster.log
+    file:
+      state: absent
+      path: "{{ ansible_env.HOME }}/ocluster.log"
+
+  - name: Remove ocluster
+    file:
+      state: absent
+      path: "{{ ansible_env.HOME }}/ocluster"
+
+  - name: Remove opam
+    file:
+      state: absent
+      path: "{{ ansible_env.HOME }}/.opam"
+
   - name: Create empty folder
     file:
       state: directory
       path: /tmp/obuilder-empty 
 
-  - name: Use rsync to delete everything in result-tmp
-    shell: rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
+  - name: Use rsync to delete everything in /Volumes/rsync/
+    shell: rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/
     become: yes
 
-  - name: Start ocluster service
-    shell: launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
-    become: yes
+  - name: Install Opam
+    import_role:
+      name: ocaml
+    environment:
+      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+#  - name: Create base image 4.14.0
+#    import_role:
+#      name: base-image
+#    vars:
+#      version: "4.14.0"
+#      user_name: "mac1000"
+#    environment:
+#      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+#  - name: Create base image 5.0.0
+#    import_role:
+#      name: base-image
+#    vars:
+#      version: "5.0.0"
+#      user_name: "mac1000"
+#    environment:
+#      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Update OCluster
+    import_role:
+      name: ocluster
+    environment:
+      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+# the service is started above ocluster role
+#  - name: Start ocluster service
+#    shell: launchctl load {{ ansible_env.HOME}}/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
   - name: Unpause the worker
     shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}

@@ -6,3 +6,6 @@ m1-worker-01.macos.ci.dev
 m1-worker-02.macos.ci.dev
 m1-worker-03.macos.ci.dev
 m1-worker-04.macos.ci.dev
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
