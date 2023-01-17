@@ -25,7 +25,7 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout f2a94b163f763d57a4a63614a62b39c1020e53e7 --recurse-submodules
+  shell: git fetch origin master && git checkout 513c17095fa97f3418970180cd72de880869c292 --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
@@ -33,12 +33,6 @@
   shell: git fetch && git checkout master
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
-
-- name: Update Fetcher variable to User_temp
-  replace:
-    path: "{{ ansible_env.HOME }}/ocluster/worker/obuilder_build.ml"
-    regexp: '^module Fetcher = Obuilder.Docker$'
-    replace: 'module Fetcher = Obuilder.User_temp'
 
 - name: Install Opam dependencies
   shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
