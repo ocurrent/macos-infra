@@ -25,7 +25,7 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 06b247aed97debdc9a357b03eb641a6eac4d1aec --recurse-submodules
+  shell: git fetch origin master && git checkout 513c17095fa97f3418970180cd72de880869c292 --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
