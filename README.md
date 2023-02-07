@@ -148,13 +148,20 @@ The Ansible playbook can be used to deploy Mac workers.  The following pre-requi
 - Install Apple Developer Command line tools
 - Turn off SIP by entering Recovery Mode (Intel: Command-R; M1: hold power button) `csrutil disable`
 - Install [macFUSE](https://osxfuse.github.io) which requires approval via System Preferences and a reboot of the system.
+  Use `brew install --cask macfuse` which will require a homebrew install.
 - Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
 - Set Docker to automatically start at sign in
 - Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
 
+
+### ERRORS:
+
+ - sudo setup step failed, manually created `/private/etc/sudoers.d/admin` with the contents
+ - Missing install of macfuse `brew install --cask macfuse`
+
 ```
 Host mac-mon-*
-	User administrator
+User administrator
 ```
 
 Run the playbook as follows.  I have used `--limit` to target a single worker.
