@@ -25,12 +25,12 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 513c17095fa97f3418970180cd72de880869c292 --recurse-submodules
+  shell: git remote add mtelvers https://github.com/mtelvers/ocluster && git fetch mtelvers && git checkout healthcheck-period --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Update Obuilder
-  shell: git fetch && git checkout master
+  shell: git remote add mtelvers https://github.com/mtelvers/obuilder && git fetch mtelvers && git checkout zfs --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 

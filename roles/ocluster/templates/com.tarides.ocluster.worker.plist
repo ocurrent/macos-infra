@@ -26,16 +26,14 @@
                 <string>--connect</string>
                 <string>/Users/administrator/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
-                <string>--fallback=/Users/administrator/lib</string>
-                <string>--fuse-path={{ homebrew_prefix }}</string>
-                <string>--scoreboard=/Users/administrator/scoreboard</string>
-                <string>--store=rsync:/Volumes/rsync</string>
-		<string>--rsync-mode=hardlink</string>
+                <string>--brew-path=/usr/local</string>
+                <string>--store=zfs:/Volumes/pool1</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
                 <string>--obuilder-prune-threshold=10</string>
                 <string>--verbosity=info</string>
+                <string>--obuilder-healthcheck=0</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
