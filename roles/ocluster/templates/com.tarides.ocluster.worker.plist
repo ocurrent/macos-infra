@@ -24,13 +24,13 @@
                 <string>sudo</string>
                 <string>./_build/install/default/bin/ocluster-worker</string>
                 <string>--connect</string>
-                <string>/Users/administrator/pool-macos-{{ ansible_architecture }}.cap</string>
+                <string>{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
-                <string>--fallback=/Users/administrator/lib</string>
+                <string>--fallback={{ ansible_env.HOME }}/lib</string>
                 <string>--fuse-path={{ homebrew_prefix }}</string>
-                <string>--scoreboard=/Users/administrator/scoreboard</string>
+                <string>--scoreboard={{ ansible_env.HOME }}/scoreboard</string>
                 <string>--store=rsync:/Volumes/rsync</string>
-		<string>--rsync-mode=hardlink</string>
+		<string>--rsync-mode=hardlink_unsafe</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
@@ -40,11 +40,11 @@
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardErrorPath</key>
-	<string>/Users/administrator/ocluster.log</string>
+	<string>{{ ansible_env.HOME }}/ocluster.log</string>
 	<key>StandardOutPath</key>
-	<string>/Users/administrator/ocluster.log</string>
+	<string>{{ ansible_env.HOME }}/ocluster.log</string>
 	<key>WorkingDirectory</key>
-	<string>/Users/administrator/ocluster</string>
+	<string>{{ ansible_env.HOME }}/ocluster</string>
 </dict>
 </plist>
 
