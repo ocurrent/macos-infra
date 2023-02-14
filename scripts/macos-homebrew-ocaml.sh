@@ -58,3 +58,4 @@ echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
 echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
 echo 'export OPAMPRECISETRACKING=1' >> ./.obuilder_profile.sh
 
+ln -s $homebrew local

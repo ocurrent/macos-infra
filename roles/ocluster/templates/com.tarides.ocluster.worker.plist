@@ -6,35 +6,24 @@
 	<true/>
 	<key>Label</key>
 	<string>com.tarides.ocluster.worker</string>
-	<key>LimitLoadToSessionType</key>
-	<array>
-		<string>Aqua</string>
-		<string>Background</string>
-		<string>LoginWindow</string>
-		<string>StandardIO</string>
-		<string>System</string>
-	</array>
 	<key>EnvironmentVariables</key>
 	<dict>
                 <key>PATH</key>
-                <string>{{ homebrew_prefix }}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+                <string>{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 	</dict>
 	<key>ProgramArguments</key>
 	<array>
-                <string>sudo</string>
                 <string>./_build/install/default/bin/ocluster-worker</string>
                 <string>--connect</string>
                 <string>{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
-                <string>--fallback={{ ansible_env.HOME }}/lib</string>
-                <string>--fuse-path={{ homebrew_prefix }}</string>
-                <string>--scoreboard={{ ansible_env.HOME }}/scoreboard</string>
-                <string>--store=rsync:/Volumes/rsync</string>
-		<string>--rsync-mode=hardlink_unsafe</string>
+                <string>--brew-path={{ homebrew_prefix }}</string>
+                <string>--store=zfs:/Volumes/obuilder</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
                 <string>--obuilder-prune-threshold=10</string>
+                <string>--obuilder-healthcheck=0</string>
                 <string>--verbosity=info</string>
 	</array>
 	<key>RunAtLoad</key>
