@@ -1,0 +1,27 @@
+---
+
+- name: Check if ZFS is installed in {{ ansible_env.HOME }}/zfs exists
+  stat:
+    path: "{{ ansible_env.HOME }}/zfs/bin/zfs"
+  register: zfs_check
+
+- name: Copy ZFS files from {{ homebrew_prefix }}/zfs
+  copy:
+    src: "{{ homebrew_prefix }}/zfs"
+    remote_src: true
+    dest: "{{ ansible_env.HOME }}/"
+  when:
+    - not zfs_check.stat.exists
+
+- name: Patch ZFS exectables to reflect new location
+  shell: |
+    for dir in {{ ansible_env.HOME }}/zfs/lib/*.dylib {{ ansible_env.HOME }}/zfs/bin/* ; do
+    for lib in `otool -L $dir | grep "{{ homebrew_prefix }}" | cut -f 1 -d" " | cut -f 2` ; do
+    new=`echo $lib | sed "s#{{ homebrew_prefix }}#{{ ansible_env.HOME }}#g"` ;
+    install_name_tool -change $lib $new $dir ;
+    done ;
+    done
+    export PATH=$PATH:~/zfs/bin
+  when:
+    - not zfs_check.stat.exists
+

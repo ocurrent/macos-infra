@@ -1,17 +1,18 @@
 ---
 
-- name: Ensure LaunchAgents folder exists
-  file:
-    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
-    state: directory
-
 - name: Create plist service file
   template:
     src: com.tarides.ocluster.worker.plist
-    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/com.tarides.ocluster.worker.plist"
+    dest: "/Library/LaunchDaemons/com.tarides.ocluster.worker.plist"
+    owner: root
+    group: wheel
+    mode: '0644'
+  become: yes
 
 - name: Stop ocluster via launchctl
-  shell: launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+  shell: launchctl unload {{ ansible_env.HOME }}/Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  register: launchctl_check
+  failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
 - name: Remove ~/ocluster
   file:
@@ -20,17 +21,17 @@
 
 - name: Download the source from GitHub
   git:
-    repo: https://github.com/ocurrent/ocluster.git
+    repo: https://github.com/mtelvers/ocluster.git
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout b0f9fa8272f36b528a38b1f57ec9e5fad2337890 --recurse-submodules
+  shell: git fetch && git checkout healthcheck-period-rebase
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Update Obuilder
-  shell: git fetch && git checkout 7015f4f00ac5183c70b27d044e8582b6c33105bd
+  shell: git remote rename origin upstream && git remote add origin https://github.com/mtelvers/obuilder.git && git fetch && git checkout zfs
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
@@ -50,11 +51,7 @@
     dest: "{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap"
     mode: '0400'
 
-- name: Ensure ~/lib exists
-  file:
-    path: "{{ ansible_env.HOME }}/lib"
-    state: directory
-
 - name: Start ocluster via launchctl
-  shell: launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+  shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  become: yes
 

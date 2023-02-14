@@ -18,27 +18,43 @@
     - macos-homebrew-ocaml.sh
     - cleanup.sh
 
-- name: Create a scoreboard directory if it does not exist
-  file:
-    path: "{{ ansible_env.HOME }}/scoreboard"
-    state: directory
-    mode: '0755'
-
 - name: Check for user {{ user_name }}
   shell: dscl . read /Users/{{ user_name }}
   register: user_check
   failed_when: user_check.rc == -1
 
-- name: Delete user {{ user_name }} if it exists
-  shell: dscl . -delete /Users/{{ user_name }}
-  when: user_check.rc == 0
+- name: Check for existing base image obuilder/base-image/macos-homebrew-ocaml-{{ short_version }}
+  shell: zfs list -H -o name obuilder/base-image/macos-homebrew-ocaml-{{ short_version }}
+  register: zfs_check
+  failed_when: zfs_check.rc > 1
+
+- name: Delete existing base image obuilder/base-image/macos-homebrew-ocaml-{{ short_version }}
+  shell: zfs destroy -R -r obuilder/base-image/macos-homebrew-ocaml-{{ short_version }}
+  when: zfs_check.rc == 0
   become: yes
+
+- name: Unmount {{ homebrew_prefix }} if it is mounted
+  become: yes
+  mount:
+    path: "{{ homebrew_prefix }}"
+    state: unmounted
+
+- name: Unmount /Users/{{ user_name }} if it is mounted
+  become: yes
+  mount:
+    path: /Users/{{ user_name }}
+    state: unmounted
 
 - name: Remove any /Users/{{ user_name }}
   become: yes
   file:
     state: absent
     path: /Users/{{ user_name }}
+
+- name: Delete user {{ user_name }} if it exists
+  shell: dscl . -delete /Users/{{ user_name }}
+  when: user_check.rc == 0
+  become: yes
 
 - name: Create user {{ user_name }}
   shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 {{ user_name }}"
@@ -50,47 +66,17 @@
       {{ user_name }} ALL=(ALL) NOPASSWD: ALL
   become: yes
 
-- name: Create a symbolic link
-  file:
-    src: /Users/{{ user_name }}
-    dest: "{{ ansible_env.HOME }}/scoreboard/1000"
-    state: link
-
-- name: Unmount {{ homebrew_prefix }} if it is mounted
+- name: Create ZFS volume for {{ homebrew_prefix }}
   become: yes
-  mount:
-    path: "{{ homebrew_prefix }}"
-    state: unmounted
+  shell: zfs create -p -o mountpoint={{ homebrew_prefix }} {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/brew
 
-- name: Create /Users/{{ user_name }}/local and homebrew subfolders
-  file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0755'
-    owner: "{{ user_name }}"
-    group: admin
+- name: Create ZFS volume for /Users/{{ user_name }}
   become: yes
-  with_items:
-    - "/Users/{{ user_name }}/local"
-    - "/Users/{{ user_name }}/local/bin"
-    - "/Users/{{ user_name }}/local/etc"
-    - "/Users/{{ user_name }}/local/include"
-    - "/Users/{{ user_name }}/local/lib"
-    - "/Users/{{ user_name }}/local/sbin"
-    - "/Users/{{ user_name }}/local/share"
-    - "/Users/{{ user_name }}/local/var"
-    - "/Users/{{ user_name }}/local/opt"
-    - "/Users/{{ user_name }}/local/share/zsh"
-    - "/Users/{{ user_name }}/local/share/zsh/site-functions"
-    - "/Users/{{ user_name }}/local/var/homebrew"
-    - "/Users/{{ user_name }}/local/var/homebrew/linked"
-    - "/Users/{{ user_name }}/local/Cellar"
-    - "/Users/{{ user_name }}/local/Caskroom"
-    - "/Users/{{ user_name }}/local/Frameworks"
+  shell: zfs create -p -o mountpoint=/Users/{{ user_name }} {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/home
 
-- name: mount {{ homebrew_prefix }}
+- name: Run chown on /Users/{{ user_name }}
   become: yes
-  shell: obuilderfs {{ ansible_env.HOME }}/scoreboard {{ homebrew_prefix }} -o allow_other
+  shell: chown {{ user_name }}:admin /Users/{{ user_name }}
 
 - name: Copy file setup script
   become: yes
@@ -116,32 +102,19 @@
     chdir: "/Users/{{ user_name }}"
     creates: "/Users/{{ user_name }}/opam-repository"
 
-- name: Unmount {{ homebrew_prefix }} if it is mounted
+- name: Unmount ZFS volume for {{ homebrew_prefix }}
   become: yes
-  mount:
-    path: "{{ homebrew_prefix }}"
-    state: unmounted
+  shell: zfs set mountpoint=none {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/brew
+
+- name: Unmount ZFS volume for /Users/{{ user_name }}
+  become: yes
+  shell: zfs set mountpoint=none {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/home
+
+- name: Create a snapshot of the base image
+  become: yes
+  shell: zfs snapshot -r {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}@snap
 
 - name: Delete user {{ user_name }}
   become: yes
   shell: dscl . -delete /Users/{{ user_name }}
-
-- name: Remove old /Users/macos-homebrew-ocaml-{{ short_version }}
-  become: yes
-  file:
-    state: absent
-    path: /Users/macos-homebrew-ocaml-{{ short_version }}
-
-- name: Move /Users/{{ user_name }} to /Users/macos-homebrew-ocaml-{{ short_version }}
-  become: yes
-  shell: "mv /Users/{{ user_name }} /Users/macos-homebrew-ocaml-{{ short_version }}"
-  args:
-    removes: "/Users/{{ user_name }}"
-    creates: "/Users/macos-homebrew-ocaml-{{ short_version }}"
-
-- name: Remove /Volumes/rsync
-  become: yes
-  shell: rm -rf /Volumes/rsync
-  args:
-    removes: /Volumes/rsync
 
