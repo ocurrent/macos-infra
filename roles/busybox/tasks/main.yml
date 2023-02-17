@@ -18,6 +18,10 @@
   become: yes
   shell: zfs create -p -o mountpoint=/Users/{{ user_name }} {{ zfs_pool }}/base-image/busybox/home
 
+- name: Run chown on /Users/{{ user_name }}
+  become: yes
+  shell: chown {{ user_name }}:admin /Users/{{ user_name }}
+
 - name: Create profile for busybox
   copy:
     dest: /Users/{{ user_name }}/.obuilder_profile.sh
