@@ -25,12 +25,12 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout 513c17095fa97f3418970180cd72de880869c292 --recurse-submodules
+  shell: git fetch origin master && git checkout b0f9fa8272f36b528a38b1f57ec9e5fad2337890 --recurse-submodules
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Update Obuilder
-  shell: git fetch && git checkout master
+  shell: git fetch && git checkout 7015f4f00ac5183c70b27d044e8582b6c33105bd
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
