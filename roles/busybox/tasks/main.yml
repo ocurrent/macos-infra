@@ -20,7 +20,7 @@
 
 - name: Run chown on /Users/{{ user_name }}
   become: yes
-  shell: chown {{ user_name }}:admin /Users/{{ user_name }}
+  shell: chown 1000:admin /Users/{{ user_name }}
 
 - name: Create profile for busybox
   copy:
