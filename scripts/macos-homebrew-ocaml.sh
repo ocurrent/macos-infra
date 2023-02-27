@@ -20,6 +20,10 @@ export homebrew=$(brew --prefix)
 # Brew has version 2.38.1
 brew install git
 
+# Opam requires GNU Patch
+brew install gpatch
+brew unlink gpatch && brew link gpatch
+
 # echo "Install Lock-free Homebrew (maybe needed for parallel support)"
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/patricoferris/install/disable-locking/install.sh)"
 
