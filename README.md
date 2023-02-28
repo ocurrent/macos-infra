@@ -151,6 +151,7 @@ The Ansible playbook can be used to deploy Mac workers.  The following pre-requi
   Use `brew install --cask macfuse` which will require a homebrew install.
 - Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
 - Set Docker to automatically start at sign in
+- Add the capability file for the scheduler pool you want to join to `./secrets/pool-macos-[arch].cap` (creating the `secrets` directory in the project root). For more info on the scheduler see [ocurrent/ocluster](https://github.com/ocurrent/ocluster).
 - Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
 
 ```
