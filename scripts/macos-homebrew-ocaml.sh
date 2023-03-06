@@ -42,6 +42,10 @@ echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_p
 echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
 echo 'export PATH=/Volumes/'$1':/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # Add system compiler to path
 
+# Opam requires GNU Patch
+brew install gpatch
+for i in $homebrew/Cellar/*/*/bin; do echo 'export PATH="'$i':$PATH' >> ~/.obuilder_profile.sh ; done
+
 echo "Setting up opam"
 
 # Important to source the system compiler path for opam to init correctly
