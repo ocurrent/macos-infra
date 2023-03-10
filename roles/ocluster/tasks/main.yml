@@ -41,7 +41,7 @@
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Dune build
-  shell: eval $(opam env) && dune build
+  shell: eval $(opam env) && dune build --release
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
