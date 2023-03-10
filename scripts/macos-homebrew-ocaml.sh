@@ -54,12 +54,20 @@ source ./.obuilder_profile.sh
 
 git clone https://github.com/ocaml/opam-repository.git
 
-opam init -k git -a ./opam-repository -c $1
+opam init -k git -a ./opam-repository -c $1 -y
 opam install -y opam-depext
 
 echo 'export OPAMYES=1' >> ./.obuilder_profile.sh
 echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
 echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
 echo 'export OPAMPRECISETRACKING=1' >> ./.obuilder_profile.sh
+
+# Stop fseventsd monitoring these volumes
+for dir in $homebrew/.fseventsd ~/.fseventsd ~/.opam/download-cache/.fseventsd ~/Library/Caches/Homebrew/.fseventsd ; do
+  sudo rm -r $dir
+  sudo mkdir $dir
+  sudo touch $dir/no_log
+  sudo chown -R mac1000:admin $dir
+done
 
 ln -s $homebrew local

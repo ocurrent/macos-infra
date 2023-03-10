@@ -106,17 +106,32 @@ Unlike previous deployments, the recommendation is to have the Mac at the login 
 
 You must now configure a ZFS pool for Obuilder to use.
 
-I am using a virtual machine on my MacPro so I have just added a second hard disk.  This is visible via `diskutil list` and a ZFS pool can be created like this:
+Shirk the existing APFS volume using _Disk Utility_.
+
+1) Open _Disk Utility_
+2) Choose _Partition_ (not _Volume_)
+3) Click _+_
+4) Click _Add Partition_
+5) Set the name/size
+6) Choose _ZFS Dataset_ from the format dropdown
+
+> _ZFS Dataset_ is only available after OpenZFS is installed
+
+_Disk Utility_ will online resize the existing volume and create the new partition.  Once complete use `diskutil list` to identify the name, typically, `/dev/disk0s3`.
+
+I am using a virtual machine on my MacPro so I have just added a second hard disk.  This is locatable via `diskutil list`.
+
+and a ZFS pool can be created like this:
 
 ```sh=
-sudo zpool create obuilder /dev/disk0
+sudo zpool create obuilder /dev/disk0s3
 sudo zfs set atime=off obuilder
 sudo zfs set checksum=off obuilder
 ```
 
 > `checksum=off` is not the recommended configuration for a production ZFS pool but it does use less CPU.
 
-On a physical Mac, it may be easiest to create an empty file and use that for the ZFS pool.
+For testing, it may be convenient to create an empty file and use that for the ZFS pool.
 
 ```sh=
 sudo mkfile 20G /Volumes/zfs
