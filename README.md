@@ -1,5 +1,4 @@
 ## OCluster/OBuilder macOS Infrastructure
---------------------------------------
 
 This document tells the ongoing story of supporting macOS in OCaml's Continuous Integration (CI) tools. In particular how the OBuilder port is currently implemented, how this fits into the OCluster worker and the manual process or keeping things up to date.
 
@@ -25,9 +24,9 @@ This document tells the ongoing story of supporting macOS in OCaml's Continuous 
 
 ## The Big Picture
 
-[OCurrent](https://github.com/ocurrent/ocurrent) is an OCaml library for building incremental pipelines. Pipelines can be thought of as directed graphs with each node being some kind of job that feeds its results into the next node. For an example, have a look at [the OCaml deploy pipeline](https://deploy.ci.ocaml.org/). 
+[OCurrent](https://github.com/ocurrent/ocurrent) is an OCaml library for building incremental pipelines. Pipelines can be thought of as directed graphs with each node being some kind of job that feeds its results into the next node. For an example, have a look at [the OCaml deploy pipeline](https://deploy.ci.ocaml.org/).
 
-An integral part to most of the [OCaml pipelines](https://github.com/ocurrent/overview) is something called [OCluster](https://github.com/ocurrent/ocluster) and [OBuilder](https://github.com/ocurrent/obuilder). OCluster is a library and collection of binaries for managing an infrastructure for building and scheduling jobs. These jobs could be Docker jobs or OBuilder jobs. OBuilder is quite similar to `docker build` but written in OCaml and using just a notion of *an execution environment* (on Linux [runc](https://github.com/opencontainers/runc)) and a *snapshotting filesystem* ([btrfs](https://btrfs.wiki.kernel.org/index.php/Main_Page), [zfs](https://openzfs.org/wiki/Main_Page) or an inefficient but convenient copying backend using `rsync`). 
+An integral part to most of the [OCaml pipelines](https://github.com/ocurrent/overview) is something called [OCluster](https://github.com/ocurrent/ocluster) and [OBuilder](https://github.com/ocurrent/obuilder). OCluster is a library and collection of binaries for managing an infrastructure for building and scheduling jobs. These jobs could be Docker jobs or OBuilder jobs. OBuilder is quite similar to `docker build` but written in OCaml and using just a notion of *an execution environment* (on Linux [runc](https://github.com/opencontainers/runc)) and a *snapshotting filesystem* ([btrfs](https://btrfs.wiki.kernel.org/index.php/Main_Page), [zfs](https://openzfs.org/wiki/Main_Page) or an inefficient but convenient copying backend using `rsync`).
 
 The big picture, and focus of this document, is adding support for building macOS OBuilder jobs. It's important to note the narrow scope of the project -- for this iteration we just need to build [opam](https://opam.ocaml.org) packages.
 
@@ -57,7 +56,9 @@ We want to have multiple Homebrew installations that all believe they are instal
 
 The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is. Since macOS Catalina this requires [System Integrity Protection (SIP) to be disabled](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection).
 
-<img style="width:50%" src="./docs/fuse.png" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
+<p align="center">
+<img style="width:40%" src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
+</p>
 
 FUSE luckily supplies all calls with a `fuse_context` which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [obuilder-fs](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted and all calls to `/usr/local` are redirected. This does have some cost, but in practice most packages make use of a few core system dependencies.
 
@@ -71,11 +72,11 @@ The workaround is to `rsync` the snapshot from the store to the user's home dire
 
 OBuilder spec files start with a `(from ...)` stage. This identifies the image that should be used as a basis for the build. In OCaml-related projects this tends to be one of the [docker base images](https://base-images.ocamllabs.io/).
 
-In order to minimise the amount of additional logic that would be needed for macOS inside things like [ocaml-ci](https://ci.ocamllabs.io/), [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci) and [opam-health-check](http://check.ocamllabs.io/), it makes sense for the macOS version to be as similar as possible to the docker base images. 
+In order to minimise the amount of additional logic that would be needed for macOS inside things like [ocaml-ci](https://ci.ocamllabs.io/), [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci) and [opam-health-check](http://check.ocamllabs.io/), it makes sense for the macOS version to be as similar as possible to the docker base images.
 
-This includes: 
+This includes:
 
- - Having both `opam.2.0.X` and `opam.2.1.X` installed and ready to use by sym-linking to `/usr/local/bin/opam` (a.k.a `~/local/bin/opam`). 
+ - Having both `opam.2.0.X` and `opam.2.1.X` installed and ready to use by sym-linking to `/usr/local/bin/opam` (a.k.a `~/local/bin/opam`).
  - Being clever (thanks @kit-ty-kate) with the `.bash_profile` script to reuse the name of the base image (i.e. `(from "macos-homebrew-ocaml-4.11")`) to setup things like the path to the system compiler. This means the Obuilder specs don't need to worry about the OCluster worker implementation details.
 
 Given what macOS actually needs is a directory ready to copy into the home directory of the user, there's also a [simple copying implementation of this initial `(from ...)` stage (the `FETCHER`)](https://github.com/patricoferris/obuilder/blob/macos-v2/lib/user_temp.ml). However, the Docker fetcher also works if the image is formatted in particular way, more on this below.
@@ -193,12 +194,12 @@ Sometimes the rsync cache fills up and needs manual intervention. In that case r
 launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
 # Create an empty directory (may already exist)
-mkdir /tmp/obuilder-empty 
+mkdir /tmp/obuilder-empty
 
 # Rsync an empty directory to result-tmp
 sudo rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
 
-# Unmount homebrew redirection, otherwise ocluster.worker will not find 
+# Unmount homebrew redirection, otherwise ocluster.worker will not find
 # its dependencies.  Either /opt/homebrew on m1 or /usr/local on Intel
 sudo umount /opt/homebrew
 sudo umount /usr/local
@@ -232,4 +233,3 @@ There is also an out of date port of [opam-health-check](https://github.com/patr
 ## Thanks
 
 For the most part, I was simply the person implementing macOS CI. Much more experienced people very gladly helped answer all of my questions: thanks @talex5, @dra27, @avsm, @kit-ty-kate, @MagnusS, @MisterDA, @tmcgilchrist and @mtelvers.
-
