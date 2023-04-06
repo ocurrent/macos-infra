@@ -3,21 +3,6 @@
 - set_fact:
     short_version: "{{ version.split('.')[:2] | join('.') }}"
 
-- name: Download the source from GitHub
-  git:
-    repo: https://github.com/ocurrent/macos-infra
-    dest: "{{ ansible_env.HOME }}/macos-infra"
-    force: yes
-
-- name: chmod +x
-  file:
-    dest: "{{ ansible_env.HOME }}/macos-infra/scripts/{{ item }}"
-    mode: a+x
-  loop:
-    - new-user.sh
-    - macos-homebrew-ocaml.sh
-    - cleanup.sh
-
 - name: Check for user {{ user_name }}
   shell: dscl . read /Users/{{ user_name }}
   register: user_check
@@ -57,7 +42,15 @@
   become: yes
 
 - name: Create user {{ user_name }}
-  shell: "{{ ansible_env.HOME }}/macos-infra/scripts/new-user.sh 1000 {{ user_name }}"
+  become: yes
+  shell: |
+    dscl . -create /Users/{{ user_name }}
+    dscl . -create /Users/{{ user_name }} UniqueID 1000
+    dscl . -create /Users/{{ user_name }} PrimaryGroupID 20
+    dscl . -create /Users/{{ user_name }} UserShell /bin/bash
+    dscl . -create /Users/{{ user_name }} NFSHomeDirectory /Users/{{ user_name }}
+    dscl . -passwd /Users/{{ user_name }} ocaml
+    dscl . -append /groups/admin GroupMembership {{ user_name }}
 
 - name: Create sudo file for {{ user_name }}
   copy:
@@ -111,11 +104,11 @@
 - name: Copy file setup script
   become: yes
   copy:
-    #src: "{{ ansible_env.HOME }}/macos-infra/scripts/macos-homebrew-ocaml.sh"
-    #remote_src: yes
     src: "scripts/macos-homebrew-ocaml.sh"
     dest: /Users/{{ user_name }}/macos-homebrew-ocaml.sh
     mode: u+rwx,g+rx,o+rx
+    owner: "{{ user_name }}"
+    group: admin
 
 - name: Test
   become: yes
@@ -143,6 +136,16 @@
 - name: Unmount ZFS volume for {{ homebrew_prefix }}
   become: yes
   shell: zfs set mountpoint=none {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/brew
+
+- name: Set ownership on cache folders mount points
+  become: yes
+  file:
+    path: "{{ item }}"
+    owner: "{{ user_name }}"
+    group: admin
+  with_items:
+    - /Users/{{ user_name }}/.opam/download-cache
+    - /Users/{{ user_name }}/Library/Caches/Homebrew
 
 - name: Unmount ZFS volume for /Users/{{ user_name }}
   become: yes

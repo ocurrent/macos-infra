@@ -38,9 +38,11 @@ opam --version
 
 echo "Updating the .obuilder_profile.sh to pre-init OCaml"
 
-echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ./.obuilder_profile.sh
-echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
-echo 'export PATH=/Volumes/'$1':/opt/homebrew/sbin:$PATH' >> ./.obuilder_profile.sh # Add system compiler to path
+echo 'export HOMEBREW_DISABLE_LOCKING=1' > ~/.obuilder_profile.sh
+echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.obuilder_profile.sh
+echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ~/.obuilder_profile.sh
+echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ~/.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
+echo 'export PATH=/Volumes/'$1':/opt/homebrew/sbin:$PATH' >> ~/.obuilder_profile.sh # Add system compiler to path
 
 # Opam requires GNU Patch
 brew install gpatch

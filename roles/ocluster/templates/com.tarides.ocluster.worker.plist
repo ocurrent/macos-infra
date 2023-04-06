@@ -22,7 +22,7 @@
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
-                <string>--obuilder-prune-threshold=10</string>
+                <string>--obuilder-prune-threshold=25</string>
                 <string>--obuilder-healthcheck=0</string>
                 <string>--verbosity=info</string>
 	</array>
