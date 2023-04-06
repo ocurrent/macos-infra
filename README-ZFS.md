@@ -127,6 +127,7 @@ and a ZFS pool can be created like this:
 sudo zpool create obuilder /dev/disk0s3
 sudo zfs set atime=off obuilder
 sudo zfs set checksum=off obuilder
+sudo zfs set compression=off obuilder
 ```
 
 > `checksum=off` is not the recommended configuration for a production ZFS pool but it does use less CPU.
@@ -138,6 +139,7 @@ sudo mkfile 20G /Volumes/zfs
 sudo zpool create obuilder /Volumes/zfs
 sudo zfs set atime=off obuilder
 sudo zfs set checksum=off obuilder
+sudo zfs set compression=off obuilder
 ```
 
 The result should be visble via `zpool`:
@@ -195,4 +197,18 @@ sudo launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
 ```
 
 STDOUT and STDERR are redirected to `~/ocluster.log`
+
+# Cloning ZFS builds
+
+It is possible to clone the base images and the cache between workers.  After one machine is built, setup SSH keys between the workers then use ZFS to clone the filesystems between the machines.
+
+```
+for pool in obuilder/cache/c-homebrew \
+            obuilder/cache/c-opam-archives \
+            obuilder/base-image/busybox \
+            obuilder/base-image/macos-homebrew-ocaml-4.14 \
+            obuilder/base-image/macos-homebrew-ocaml-5.0 ; do \
+  sudo zfs send -R $pool@snap | ssh 192.168.10.40 sudo /usr/local/zfs/bin/zfs recv -Fdu obuilder ; \
+done
+```
 
