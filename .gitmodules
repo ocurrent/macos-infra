@@ -1,8 +1,0 @@
-[submodule "obuilder"]
-	path = obuilder
-	url = https://github.com/ocurrent/obuilder
-	branch = master
-[submodule "ocurrent"]
-	path = ocurrent
-	url = https://github.com/ocurrent/ocurrent
-	branch = master
