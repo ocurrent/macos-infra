@@ -11,7 +11,7 @@ case "$1" in
   restore)
     zfs send -R backup/cache/c-homebrew@snap | zfs receive -d obuilder/cache/c-homebrew
     zfs send -R backup/cache/c-opam-archives@snap | zfs receive -d obuilder/cache/c-opam-archives
-    zfs destroy -f backup
+    zpool destroy -f backup
     rm /Volumes/backup.zfs
   ;;
 
