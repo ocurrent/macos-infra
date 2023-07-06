@@ -11,9 +11,13 @@
   shell: mdutil -i off -d -a
   become: yes
 
-- name: Unload Spotlight service
-  shell: launchctl unload -w /System/Library/LaunchDaemons/com.apple.metadata.mds.plist
+- name: Unload unwanted service
+  shell: launchctl unload -w /System/Library/LaunchDaemons/{{ item }}.plist
   become: yes
+  loop:
+    - com.apple.metadata.mds
+    - com.apple.spindump
+    - com.apple.tailspind
 
 - name: Turn off desktop icons for each mounted volume
   shell: defaults write com.apple.finder CreateDesktop -bool false

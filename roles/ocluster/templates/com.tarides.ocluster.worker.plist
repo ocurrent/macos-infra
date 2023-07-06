@@ -18,10 +18,10 @@
                 <string>{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap</string>
                 <string>--uid=1000</string>
                 <string>--brew-path={{ homebrew_prefix }}</string>
-                <string>--store=zfs:/Volumes/obuilder</string>
                 <string>--state-dir=/var/lib/ocluster-worker</string>
                 <string>--name={{ inventory_hostname_short }}</string>
                 <string>--capacity=1</string>
+                <string>--obuilder-store=zfs:/Volumes/obuilder</string>
                 <string>--obuilder-prune-threshold=25</string>
                 <string>--obuilder-healthcheck=0</string>
                 <string>--verbosity=info</string>
