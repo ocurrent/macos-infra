@@ -10,7 +10,8 @@
   become: yes
 
 - name: Stop ocluster via launchctl
-  shell: launchctl unload {{ ansible_env.HOME }}/Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  become: yes
   register: launchctl_check
   failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
@@ -21,24 +22,24 @@
 
 - name: Download the source from GitHub
   git:
-    repo: https://github.com/mtelvers/ocluster.git
+    repo: https://github.com/ocurrent/ocluster.git
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch && git checkout healthcheck-period-rebase
+  shell: git fetch origin pull/233/head:fix-fetcher && git checkout fix-fetcher
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Update Obuilder
-  shell: git remote rename origin upstream && git remote add origin https://github.com/mtelvers/obuilder.git && git fetch && git checkout zfs
+  shell: git fetch origin pull/164/head:zfs && git checkout zfs
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
-- name: Install Opam dependencies
-  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
-  args:
-    chdir: "{{ ansible_env.HOME }}/ocluster"
+#- name: Install Opam dependencies
+#  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
+#  args:
+#    chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Dune build
   shell: eval $(opam env) && dune build --release
