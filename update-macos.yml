@@ -1,0 +1,30 @@
+---
+
+- hosts: all
+  tasks:
+  - name: Download Software Updates
+    command: softwareupdate --download --all --agree-to-license
+    become: yes
+
+  - name: Pause the worker
+    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+
+  - name: Install Software Updates
+    command: softwareupdate --no-scan --install --all --agree-to-license
+    register: update
+    async: 7200
+    poll: 60
+    become: yes
+    changed_when: update.rc !=0 and 'No updates are available.' not in update.stderr
+
+  - debug: var=update.stdout_lines
+
+  - name: Reboot
+    reboot:
+    become: yes
+
+  - name: Unpause the worker
+    shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+

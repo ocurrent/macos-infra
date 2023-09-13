@@ -1,18 +1,30 @@
 ---
 
-- name: Create directory for busybox profile
+- name: Check for existing base image obuilder/base-image/busybox
+  shell: zfs list -H -o name obuilder/base-image/busybox
+  register: zfs_check
+  failed_when: zfs_check.rc > 1
+
+- name: Delete existing base image obuilder/base-image/busybox
+  shell: zfs destroy -R -r obuilder/base-image/busybox
+  when: zfs_check.rc == 0
   become: yes
-  file:
-    state: directory
-    path: "{{ item }}"
-    mode: '0775'
-  loop:
-    - /Users/busybox
-    - /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/rootfs
+
+- name: Create ZFS volume for {{ homebrew_prefix }}
+  become: yes
+  shell: zfs create -p -o mountpoint={{ homebrew_prefix }} {{ zfs_pool }}/base-image/busybox/brew
+
+- name: Create ZFS volume for /Users/{{ user_name }}
+  become: yes
+  shell: zfs create -p -o mountpoint=/Users/{{ user_name }} {{ zfs_pool }}/base-image/busybox/home
+
+- name: Run chown on /Users/{{ user_name }}
+  become: yes
+  shell: chown 1000:admin /Users/{{ user_name }}
 
 - name: Create profile for busybox
   copy:
-    dest: "{{ item }}"
+    dest: /Users/{{ user_name }}/.obuilder_profile.sh
     content: |
       export HOMEBREW_DISABLE_LOCKING=1
       export HOMEBREW_NO_AUTO_UPDATE=1
@@ -23,16 +35,16 @@
       export OPAMERRLOGLEN=0
       export OPAMPRECISETRACKING=1
   become: yes
-  loop:
-    - /Users/busybox/.obuilder_profile.sh
-    - /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/rootfs/.obuilder_profile.sh
 
-- name: Create env file
-  copy:
-    dest: /Volumes/rsync/result/9d75f0d7c398df565d7ac04c6819b62d6d8f9560f5eb4672596ecd8f7e96ae91/env
-    content: |
-      ((env ()))
-    mode: '0664'
-    group: staff
+- name: Unmount ZFS volume for {{ homebrew_prefix }}
   become: yes
+  shell: zfs set mountpoint=none {{ zfs_pool }}/base-image/busybox/brew
+
+- name: Unmount ZFS volume for /Users/{{ user_name }}
+  become: yes
+  shell: zfs set mountpoint=none {{ zfs_pool }}/base-image/busybox/home
+
+- name: Create a snapshot of the base image
+  become: yes
+  shell: zfs snapshot -r {{ zfs_pool }}/base-image/busybox@snap
 

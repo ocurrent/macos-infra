@@ -1,17 +1,19 @@
 ---
 
-- name: Ensure LaunchAgents folder exists
-  file:
-    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
-    state: directory
-
 - name: Create plist service file
   template:
     src: com.tarides.ocluster.worker.plist
-    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/com.tarides.ocluster.worker.plist"
+    dest: "/Library/LaunchDaemons/com.tarides.ocluster.worker.plist"
+    owner: root
+    group: wheel
+    mode: '0644'
+  become: yes
 
 - name: Stop ocluster via launchctl
-  shell: launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+  shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  become: yes
+  register: launchctl_check
+  failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
 - name: Remove ~/ocluster
   file:
@@ -25,22 +27,22 @@
     force: yes
 
 - name: Checkout the correct SHA
-  shell: git fetch origin master && git checkout b0f9fa8272f36b528a38b1f57ec9e5fad2337890 --recurse-submodules
+  shell: git fetch origin pull/233/head:fix-fetcher && git checkout fix-fetcher
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Update Obuilder
-  shell: git fetch && git checkout 7015f4f00ac5183c70b27d044e8582b6c33105bd
+  shell: git fetch origin pull/164/head:zfs && git checkout zfs
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
 
-- name: Install Opam dependencies
-  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
-  args:
-    chdir: "{{ ansible_env.HOME }}/ocluster"
+#- name: Install Opam dependencies
+#  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
+#  args:
+#    chdir: "{{ ansible_env.HOME }}/ocluster"
 
 - name: Dune build
-  shell: eval $(opam env) && dune build
+  shell: eval $(opam env) && dune build --release
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
@@ -50,11 +52,7 @@
     dest: "{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap"
     mode: '0400'
 
-- name: Ensure ~/lib exists
-  file:
-    path: "{{ ansible_env.HOME }}/lib"
-    state: directory
-
 - name: Start ocluster via launchctl
-  shell: launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+  shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  become: yes
 

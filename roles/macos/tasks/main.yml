@@ -1,0 +1,30 @@
+---
+
+- name: Create sudo file for admin group
+  copy:
+    dest: "/private/etc/sudoers.d/admin"
+    content: |
+      %admin ALL=(ALL) NOPASSWD: ALL
+  become: yes
+
+- name: Turn off Spotlight indexes for all volumes
+  shell: mdutil -i off -d -a
+  become: yes
+
+- name: Unload unwanted service
+  shell: launchctl unload -w /System/Library/LaunchDaemons/{{ item }}.plist
+  become: yes
+  loop:
+    - com.apple.metadata.mds
+    - com.apple.spindump
+    - com.apple.tailspind
+
+- name: Turn off desktop icons for each mounted volume
+  shell: defaults write com.apple.finder CreateDesktop -bool false
+  become: yes
+
+- name: Restart Finder
+  shell: pkill Finder
+  register: pkill
+  failed_when: pkill.rc > 1
+
