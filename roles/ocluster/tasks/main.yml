@@ -26,21 +26,6 @@
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
-- name: Checkout the correct SHA
-  shell: git fetch origin pull/233/head:fix-fetcher && git checkout fix-fetcher
-  args:
-    chdir: "{{ ansible_env.HOME }}/ocluster"
-
-- name: Update Obuilder
-  shell: git fetch origin pull/164/head:zfs && git checkout zfs
-  args:
-    chdir: "{{ ansible_env.HOME }}/ocluster/obuilder"
-
-#- name: Install Opam dependencies
-#  shell: eval $(opam env) && opam update && opam install dune fmt prometheus-app extunix capnp-rpc-unix digestif psq ppx_expect dune-build-info alcotest-lwt sqlite3 sha current_web lwt-dllist current_git tar-unix current_github -y --confirm-level=unsafe-yes
-#  args:
-#    chdir: "{{ ansible_env.HOME }}/ocluster"
-
 - name: Dune build
   shell: eval $(opam env) && dune build --release
   args:
