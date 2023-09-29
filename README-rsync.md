@@ -1,6 +1,6 @@
 ## OCluster/OBuilder macOS Infrastructure
 
-This document tells the ongoing story of supporting macOS in OCaml's Continuous Integration (CI) tools. In particular how the OBuilder port is currently implemented, how this fits into the OCluster worker and the manual process or keeping things up to date.
+This document tells the ongoing story of supporting macOS in OCaml's Continuous Integration (CI) tools. In particular, how the OBuilder port is currently implemented, how this fits into the OCluster worker, and the manual process or keeping things up to date.
 
 <!-- TOC -->
 
@@ -26,21 +26,21 @@ This document tells the ongoing story of supporting macOS in OCaml's Continuous 
 
 [OCurrent](https://github.com/ocurrent/ocurrent) is an OCaml library for building incremental pipelines. Pipelines can be thought of as directed graphs with each node being some kind of job that feeds its results into the next node. For an example, have a look at [the OCaml deploy pipeline](https://deploy.ci.ocaml.org/).
 
-An integral part to most of the [OCaml pipelines](https://github.com/ocurrent/overview) is something called [OCluster](https://github.com/ocurrent/ocluster) and [OBuilder](https://github.com/ocurrent/obuilder). OCluster is a library and collection of binaries for managing an infrastructure for building and scheduling jobs. These jobs could be Docker jobs or OBuilder jobs. OBuilder is quite similar to `docker build` but written in OCaml and using just a notion of *an execution environment* (on Linux [runc](https://github.com/opencontainers/runc)) and a *snapshotting filesystem* ([btrfs](https://btrfs.wiki.kernel.org/index.php/Main_Page), [zfs](https://openzfs.org/wiki/Main_Page) or an inefficient but convenient copying backend using `rsync`).
+An integral part to most of the [OCaml pipelines](https://github.com/ocurrent/overview) is something called [OCluster](https://github.com/ocurrent/ocluster) and [OBuilder](https://github.com/ocurrent/obuilder). OCluster is a library and collection of binaries for managing an infrastructure for building and scheduling jobs. These jobs could be Docker jobs or OBuilder jobs. OBuilder is quite similar to `docker build` but written in OCaml and using just a notion of *an execution environment* (on Linux [`runc`](https://github.com/opencontainers/runc)) and a *snapshotting filesystem* ([btrfs](https://btrfs.wiki.kernel.org/index.php/Main_Page), [zfs](https://openzfs.org/wiki/Main_Page) or an inefficient but convenient copying backend using `rsync`).
 
-The big picture, and focus of this document, is adding support for building macOS OBuilder jobs. It's important to note the narrow scope of the project -- for this iteration we just need to build [opam](https://opam.ocaml.org) packages.
+The big picture, and focus of this document, is adding support for building macOS OBuilder jobs. It's important to note the narrow scope of the project. For this iteration, we just need to build [opam](https://opam.ocaml.org) packages.
 
 ## The Implementation
 
 ### Overview
 
-The main problem we are tackling is that macOS has *no notion or support of native containers*. You can have multiple users on a single machine, each with their own home directory and ability to execute commands and a way of identifying who they are (their `uid`). This is how the macOS implementation of OBuilder's `SANDBOX` is built. Individual users can be created for each build and in the future `sandbox-exec` can help to restrict what they have access to.
+The main problem we are tackling is that macOS has *no notion or support of native containers*. You can have multiple users on a single machine, each with their own home directory and ability to execute commands and a way of identifying who they are (their `uid`). This is how the macOS implementation of OBuilder's `SANDBOX` is built. Individual users can be created for each build, and in the future `sandbox-exec` can help to restrict what they have access to.
 
 Although not part of the current implementation, the idea is to have multiple users building in parallel. For now, it is restricted to just one.
 
 ### Snapshotting Filesystem
 
-On macOS there is a [port of ZFS](https://openzfsonosx.org/) that, at the time, works quite well but not perfectly. Many hours were lost debugging what ended up being small bugs in ZFS. This is what inspired adding a very portable and reliable, but slow and memory-inefficient [`rsync` store backend](https://github.com/ocurrent/obuilder/pull/88). This is what is currently used in the macOS implementation which so far has been very reliable and once the caches are hot, the slow down isn't too noticeable.
+On macOS, there is a [port of ZFS](https://openzfsonosx.org/) that, at the time, works quite well but not perfectly. Many hours were lost debugging what ended up being small bugs in ZFS. This is what inspired adding a very portable and reliable, but slow and memory-inefficient [`rsync` store backend](https://github.com/ocurrent/obuilder/pull/88). This is what is currently used in the macOS implementation, which so far has been very reliable, and once the caches are hot, the slow down isn't too noticeable.
 
 ### Global System Dependencies
 
@@ -48,38 +48,38 @@ Opam, the OCaml package manager, is happy to have multiple opam roots on a syste
 
 Homebrew, a macOS system package manager, is not so willing to be installed anywhere. [You can do it](https://docs.brew.sh/Installation#untar-anywhere), but as they say:
 
-> ...do yourself a favour and install to /usr/local on macOS Intel, /opt/homebrew on macOS ARM ... Pick another prefix at your peril!
+> ...do yourself a favour and install to `/usr/local` on macOS Intel, `/opt/homebrew` on macOS ARM ... Pick another prefix at your peril!
 
 ### Tricking Homebrew with FUSE
 
-We want to have multiple Homebrew installations that all believe they are installed in `/usr/local`. Without this, Homebrew can't use "bottles" which are pre-built binaries making builds much faster.
+We want to have multiple Homebrew installations that all believe they are installed in `/usr/local`. Without this, Homebrew can't use "bottles," which are pre-built binaries making builds much faster.
 
-The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is. Since macOS Catalina this requires [System Integrity Protection (SIP) to be disabled](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection).
+The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is. Since macOS Catalina, this requires [System Integrity Protection (SIP) to be disabled](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection).
 
 <p align="center">
 <img style="width:40%" src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
 </p>
 
-FUSE luckily supplies all calls with a `fuse_context` which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [obuilder-fs](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted and all calls to `/usr/local` are redirected. This does have some cost, but in practice most packages make use of a few core system dependencies.
+FUSE luckily supplies all calls with a `fuse_context`, which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [`obuilder-fs`](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted, and all calls to `/usr/local` are redirected. This does have some cost, but in practice, most packages make use of a few core system dependencies.
 
 ### Rsyncing to Home
 
-With the scheme described above, each user's home directory is easy to find as it is based on the `uid`. One problem though is that for each build step (`run`, `copy`...) we take a snapshot so we can later restore from it. This means we need to sync the home directory with the snapshot. This is also important for packages that are not relocatable (at the time of writing `ocamlfind` is an example).
+With the scheme described above, each user's home directory is easy to find, as it is based on the `uid`. One problem though is that for each build step (`run`, `copy`...) we take a snapshot so we can later restore from it. This means we need to sync the home directory with the snapshot. This is also important for packages that are not relocatable (at the time of writing `ocamlfind` is an example).
 
 The workaround is to `rsync` the snapshot from the store to the user's home directory every time we execute a step. This is exactly what happens in this [code in the macOS sandbox implementation](https://github.com/patricoferris/obuilder/blob/8c3f200b519ad14a5f70787e42f59ec7db229d3c/lib/sandbox.macos.ml#L61).
 
 ### Docker-esque Base Images
 
-OBuilder spec files start with a `(from ...)` stage. This identifies the image that should be used as a basis for the build. In OCaml-related projects this tends to be one of the [docker base images](https://base-images.ocamllabs.io/).
+OBuilder spec files start with a `(from ...)` stage. This identifies the image that should be used as a basis for the build. In OCaml-related projects, this tends to be one of the [Docker base images](https://base-images.ocamllabs.io/).
 
-In order to minimise the amount of additional logic that would be needed for macOS inside things like [ocaml-ci](https://ci.ocamllabs.io/), [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci) and [opam-health-check](http://check.ocamllabs.io/), it makes sense for the macOS version to be as similar as possible to the docker base images.
+In order to minimise the amount of additional logic that would be needed for macOS inside things like [ocaml-ci](https://ci.ocamllabs.io/), [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci), and [opam-health-check](http://check.ocamllabs.io/), it makes sense for the macOS version to be as similar as possible to the Docker base images.
 
 This includes:
 
- - Having both `opam.2.0.X` and `opam.2.1.X` installed and ready to use by sym-linking to `/usr/local/bin/opam` (a.k.a `~/local/bin/opam`).
- - Being clever (thanks @kit-ty-kate) with the `.bash_profile` script to reuse the name of the base image (i.e. `(from "macos-homebrew-ocaml-4.11")`) to setup things like the path to the system compiler. This means the Obuilder specs don't need to worry about the OCluster worker implementation details.
+ - Having both `opam.2.0.X` and `opam.2.1.X` installed and ready to use by sym-linking to `/usr/local/bin/opam` (a.k.a. `~/local/bin/opam`).
+ - Being clever (thanks @kit-ty-kate) with the `.bash_profile` script to reuse the name of the base image (i.e., `(from "macos-homebrew-ocaml-4.11")`) to setup things like the path to the system compiler. This means the OBuilder specs don't need to worry about the OCluster worker implementation details.
 
-Given what macOS actually needs is a directory ready to copy into the home directory of the user, there's also a [simple copying implementation of this initial `(from ...)` stage (the `FETCHER`)](https://github.com/patricoferris/obuilder/blob/macos-v2/lib/user_temp.ml). However, the Docker fetcher also works if the image is formatted in particular way, more on this below.
+Given what macOS actually needs is a directory ready to copy into the home directory of the user, there's also a [simple copying implementation of this initial `(from ...)` stage (the `FETCHER`)](https://github.com/patricoferris/obuilder/blob/macos-v2/lib/user_temp.ml). However, the Docker fetcher also works if the image is formatted in particular way. More on this below.
 
 ## OCluster macOS Worker
 
@@ -87,9 +87,9 @@ Relevant PR: https://github.com/ocurrent/ocluster/pull/152
 
 ### Building a macOS Base Directory
 
-This repository contains an OCaml executable (`main.ml`) for building macOS "base directories". Primarily, this installs Homebrew and opam and actually reuses the macOS OBuilder backend to do so. You can see from the spec file described in `main.ml` that sometimes we need to be careful with paths in macOS spec files. Only `/usr/local` is remapped so absolute paths anywhere else will all be shared and should not be allowed.
+This repository contains an OCaml executable (`main.ml`) for building macOS "base directories." Primarily, this installs Homebrew and opam, and it actually reuses the macOS OBuilder backend to do so. You can see from the spec file described in `main.ml` that sometimes we need to be careful with paths in macOS spec files. Only `/usr/local` is remapped, so absolute paths anywhere else will all be shared and should not be allowed.
 
-We still use system compilers installed on the worker machine. The OBuilder implementation always sources a `.obuilder_profile.sh` file before building. There we can ensure the correct `PATH` is set. To easily install system compilers (for different versions of the compiler) there is [the opam-sysinstall plugin](https://github.com/patricoferris/opam-sysinstall).
+We still use system compilers installed on the worker machine. The OBuilder implementation always sources a `.obuilder_profile.sh` file before building. There we can ensure the correct `PATH` is set. To easily install system compilers (for different versions of the compiler), there is [the opam-sysinstall plugin](https://github.com/patricoferris/opam-sysinstall).
 
 To build a new base directory you can run:
 
@@ -97,7 +97,7 @@ To build a new base directory you can run:
 sudo dune exec -- ./main.exe --ocaml-version=4.14.0 --rsync=/Volumes/rsync --uid=705 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard --verbosity=info
 ```
 
-The final build will be in `/Users/mac705` (or in the final snapshot in the rsync store). If you want to use the `User_temp` copying `FETCHER` then you can
+The final build will be in `/Users/mac705` (or in the final snapshot in the `rsync` store). If you want to use the `User_temp` copying `FETCHER` then you can
 
 ```
 sudo rsync -aHq /Users/mac705/ /Users/macos-homebrew-ocaml-4.14
@@ -126,7 +126,7 @@ index 9cebd2b..0a0af6d 100644
  let ( / ) = Filename.concat
 ```
 
-The Docker `FETCHER` does work but we don't have a [base-images](https://github.com/ocurrent/docker-base-images) equivalent to keep things up to date yet. To make a compatible Docker image you can run `docker build` with the following Dockerfile:
+The Docker `FETCHER` does work, but we don't have a [base-images](https://github.com/ocurrent/docker-base-images) equivalent to keep things up to date yet. To make a compatible Docker image, you can run `docker build` with the following Dockerfile:
 
 ```Dockerfile
 FROM scratch
@@ -138,22 +138,22 @@ And push the image.
 
 ## Ansible Playbook
 
-The Ansible playbook can be used to deploy Mac workers.  The following pre-requisites should be satisfied:
+The Ansible playbook can be used to deploy Mac workers.  The following prerequisites should be satisfied:
 
-- Security & Privacy \ General \ Require Password -- disables screen saver
+- Security & Privacy \ General \ Require Password -- disables screensaver
 - Users & Groups \ Login Options \ Automatic login as administrator
 - Sharing \ Screen sharing -- enables VNC
 - Sharing \ Remote login -- enables SSH.  Also select the “Allow full disk access for remote users” checkbox.
-- Energy Saver \ Prevent your Mac from automatically sleeping
+- Energy Saver \ Prevents your Mac from automatically sleeping
 - Energy Saver \ Start up automatically after power failure
-- Install Apple Developer Command line tools
+- Install Apple Developer Command Line Tools
 - Turn off SIP by entering Recovery Mode (Intel: Command-R; M1: hold power button) `csrutil disable`
-- Install [macFUSE](https://osxfuse.github.io) which requires approval via System Preferences and a reboot of the system.
-  Use `brew install --cask macfuse` which will require a homebrew install.
+- Install [macFUSE](https://osxfuse.github.io), which requires approval via System Preferences and a reboot of the system.
+  Use `brew install --cask macfuse` which will require a Homebrew install.
 - Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
 - Set Docker to automatically start at sign in
-- Add the capability file for the scheduler pool you want to join to `./secrets/pool-macos-[arch].cap` (creating the `secrets` directory in the project root). For more info on the scheduler see [ocurrent/ocluster](https://github.com/ocurrent/ocluster).
-- Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
+- Add the capability file for the scheduler pool you want to join to `./secrets/pool-macos-[arch].cap` (creating the `secrets` directory in the project root). For more info on the scheduler, see [ocurrent/ocluster](https://github.com/ocurrent/ocluster).
+- Add your SSH key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the Mac without prompting for a username:
 
 ```
 Host mac-mon-*
@@ -168,26 +168,26 @@ ansible-playbook -i hosts --limit i7-worker-01 playbook.yml
 
 ## Starting and Stopping
 
-Ocluster-worker is run via LaunchAgent.
+`ocluster-worker` is run via LaunchAgent.
 
 The Ansible scripts create a service definition `.plist` in `~/Library/LaunchAgents/com.tarides.ocluster.worker.plist`.
 
-To start the service run
+To start the service run:
 
 ```shell=
 launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ```
 
-To stop the service run
+To stop the service run:
 
 ```shell=
 launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ```
 
 STDOUT and STDERR are redirected to `~/ocluster.log`
-## Clearing disk space
+## Clearing Disk Space
 
-Sometimes the rsync cache fills up and needs manual intervention. In that case run:
+Sometimes the Rsync cache fills up and needs manual intervention. In that case run:
 
 ``` shell
 # Stop the service
@@ -208,7 +208,7 @@ sudo umount /usr/local
 launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
 ```
 
-Check the playbook `flush-rsync.yml` which automatically performs these steps including:
+Check the playbook `flush-rsync.yml`, which automatically performs these steps including:
 * Pausing the worker in the pool
 * Unloading the worker service
 * Update the OCluster code from GitHub
@@ -221,15 +221,15 @@ ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev flush-rsync.yml
 
 ## Current Deployment and Future Steps
 
-Currently the macOS workers have been used in [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci/pull/116) although at the time of writing it is currently disabled. This is because the macOS machines still need frequent manual fixing and updating which I didn't have time for, the following steps are what is probably needed at a bare minimum to get things up and running in a more stable state.
+Currently the macOS workers have been used in [`opam-repo-ci`](https://github.com/ocurrent/opam-repo-ci/pull/116), although at the time of writing, it is currently disabled. This is because the macOS machines still need frequent manual fixing and updating, which I didn't have time for. The following steps are what is probably needed at a bare minimum to get things up and running in a more stable state.
 
- - Convert to using docker for the images -- this would require wrapping this `main.ml` script in an OCurrent pipeline to periodically rebuild the base images using a connected macOS worker. As far as I know, we don't yet have a way to take the output from one obuilder job and docker-ise it. @kit-ty-kate has kindly put most of this into [this comment](https://github.com/ocurrent/opam-repo-ci/pull/116#issuecomment-881396651).
- - More testing -- this includes on newer macOS versions (Monterey) and on Apple Silicon. Now that we use `rsync` I'm quite confident this should work with little effort (macFUSE also support Apple Silicon in recent releases).
+ - Convert to using Docker for the images: this would require wrapping this `main.ml` script in an OCurrent pipeline to periodically rebuild the base images using a connected macOS worker. As far as I know, we don't yet have a way to take the output from one OBuilder job and Docker-ise it. @kit-ty-kate has kindly put most of this into [this comment](https://github.com/ocurrent/opam-repo-ci/pull/116#issuecomment-881396651).
+ - More testing: this includes on newer macOS versions (Monterey) and on Apple Silicon. Now that we use `rsync`, I'm quite confident this should work with little effort (macFUSE also support Apple Silicon in recent releases).
 
-It is important to note that macOS will likely *always* need a slightly modified OBuilder spec file that is somewhat aware of it's limitations. See for example the [changes made for opam-repo-ci](https://github.com/kit-ty-kate/opam-repo-ci/blob/f8259948755dc09deabaada1e2d87dae2cbe1c42/lib/opam_build.ml#L45).
+It is important to note that macOS will likely *always* need a slightly modified OBuilder spec file that is somewhat aware of it's limitations. See for example the [changes made for `opam-repo-ci`](https://github.com/kit-ty-kate/opam-repo-ci/blob/f8259948755dc09deabaada1e2d87dae2cbe1c42/lib/opam_build.ml#L45).
 
-There is also an out of date port of [opam-health-check](https://github.com/patricoferris/opam-health-check/commit/c19211583a9bacc994f31ec28e5dd1b780bcf1fd) that can build using macOS workers too. This is quite useful for testing the builder.
+There is also an out-of-date port of [`opam-health-check`](https://github.com/patricoferris/opam-health-check/commit/c19211583a9bacc994f31ec28e5dd1b780bcf1fd) that can build using macOS workers too. This is quite useful for testing the builder.
 
 ## Thanks
 
-For the most part, I was simply the person implementing macOS CI. Much more experienced people very gladly helped answer all of my questions: thanks @talex5, @dra27, @avsm, @kit-ty-kate, @MagnusS, @MisterDA, @tmcgilchrist and @mtelvers.
+For the most part, I was simply the person implementing macOS CI. Much more experienced people very gladly helped answer all of my questions: thanks @talex5, @dra27, @avsm, @kit-ty-kate, @MagnusS, @MisterDA, @tmcgilchrist, and @mtelvers.
