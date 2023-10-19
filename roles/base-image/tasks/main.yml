@@ -101,14 +101,84 @@
   become: yes
   shell: chown -R {{ user_name }}:admin /Users/{{ user_name }}
 
-- name: Copy file setup script
+- name: Create setup script
   become: yes
   copy:
-    src: "scripts/macos-homebrew-ocaml.sh"
     dest: /Users/{{ user_name }}/macos-homebrew-ocaml.sh
     mode: u+rwx,g+rx,o+rx
     owner: "{{ user_name }}"
     group: admin
+    content: |
+      #!/bin/sh
+
+      set -e
+
+      if [[ $# -eq 0 ]] ; then
+          echo 'Usage: $0 ocaml_version'
+          exit 1
+      fi
+
+      # Required as the access to /tmp is forbidden
+      export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
+
+      # Install Homebrew
+      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      /usr/libexec/path_helper
+      export homebrew=$(brew --prefix)
+
+      # Git included in Apple Developer Tools is version 2.37.1
+      # Brew has version 2.38.1
+      brew install git
+
+      # Opam requires GNU Patch
+      brew install gpatch
+      for i in $homebrew/Cellar/*/*/bin; do echo 'export PATH="'$i':$PATH' >> ~/.obuilder_profile.sh ; done
+
+      # Download opam
+      curl https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh -o install.sh
+      chmod +x install.sh
+      ./install.sh --download-only
+      ./install.sh --download-only --dev
+      rm install.sh
+      chmod +x opam-2.1.* opam-2.2.*
+      mv opam-2.1.* $homebrew/bin/opam-2.1
+      mv opam-2.2.* $homebrew/bin/opam-dev
+
+      # Default link 2.1 to opam
+      ln $homebrew/bin/opam-2.1 $homebrew/bin/opam
+
+      # Check opam version
+      opam --version
+
+      # Create the .obuilder_profile.sh
+      echo 'export HOMEBREW_DISABLE_LOCKING=1' > ~/.obuilder_profile.sh
+      echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.obuilder_profile.sh
+      echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ~/.obuilder_profile.sh
+      echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ~/.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
+      echo 'export OPAMYES=1' >> ./.obuilder_profile.sh
+      echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
+      echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
+      echo 'export OPAMPRECISETRACKING=1' >> ./.obuilder_profile.sh
+
+      # Clone opam-repo
+      git clone https://github.com/ocaml/opam-repository.git
+
+      # Create opam switch
+      source ./.obuilder_profile.sh
+      opam init -k git -a ./opam-repository -c $1 -y
+
+      # Stop fseventsd monitoring these volumes
+      for dir in $homebrew/.fseventsd ~/.fseventsd ~/.opam/download-cache/.fseventsd ~/Library/Caches/Homebrew/.fseventsd ; do
+        echo "Remove $dir"
+        sudo rm -r $dir
+        sudo mkdir $dir
+        sudo touch $dir/no_log
+        sudo chown -R mac1000:admin $dir
+      done
+
+      # link local to $homebrew
+      ln -s $homebrew local
 
 - name: Test
   become: yes
@@ -158,4 +228,13 @@
 - name: Delete user {{ user_name }}
   become: yes
   shell: dscl . -delete /Users/{{ user_name }}
+
+- name: Clone if it is the default
+  when: default == true
+  become: yes
+  shell: |
+    zfs clone -p {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}@snap {{ zfs_pool }}/base-image/macos-homebrew
+    zfs clone -p {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/home@snap {{ zfs_pool }}/base-image/macos-homebrew/home
+    zfs clone -p {{ zfs_pool }}/base-image/macos-homebrew-ocaml-{{ short_version }}/brew@snap {{ zfs_pool }}/base-image/macos-homebrew/brew
+    zfs snapshot -r {{ zfs_pool }}/base-image/macos-homebrew@snap
 

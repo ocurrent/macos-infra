@@ -3,6 +3,18 @@
   shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
   delegate_to: 127.0.0.1
 
+- name: Stop ocluster via launchctl
+  shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+  become: yes
+  register: launchctl_check
+  failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
+
+- name: Remove ocluster.log
+  become: yes
+  file:
+    path: "{{ ansible_env.HOME }}/ocluster.log"
+    state: absent
+
 - name: Reboot
   reboot:
   become: yes

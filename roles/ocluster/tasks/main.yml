@@ -37,6 +37,12 @@
     dest: "{{ ansible_env.HOME }}/pool-macos-{{ ansible_architecture }}.cap"
     mode: '0400'
 
+- name: Remove ocluster.log
+  become: yes
+  file:
+    path: "{{ ansible_env.HOME }}/ocluster.log"
+    state: absent
+
 - name: Start ocluster via launchctl
   shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
   become: yes

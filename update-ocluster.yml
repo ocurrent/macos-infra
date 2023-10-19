@@ -26,24 +26,31 @@
     register: launchctl_check
     failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
-  - name: Remove zfs volumes
-    shell: "{{ ansible_env.HOME }}/zfs/bin/zfs destroy -r -f {{ item }}"
+  - name: Destroy ZFS pool
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool destroy -f obuilder"
     become: yes
-    register: zfs_check
-    failed_when: zfs_check.rc > 1
+
+  - name: Create new pool
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool create -f obuilder /dev/disk0s3"
+    become: yes
+
+  - name: Set defaults
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zfs {{ item }}"
+    become: yes
     with_items:
-      - obuilder/state
-      - obuilder/result
-      - obuilder/cache-tmp
+      - set atime=off obuilder
+      - set checksum=off obuilder
+      - set compression=off obuilder
 
 - hosts: all
   name: Install Roles
   roles:
     - macos
-    - { role: base-image, version: "4.14.1", user_name: mac1000, zfs_pool: "obuilder" }
-    - { role: base-image, version: "5.0.0", user_name: mac1000, zfs_pool: "obuilder" }
-    - { role: base-image, version: "5.1.0~beta1", user_name: mac1000, zfs_pool: "obuilder" }
-    - { role: base-image, version: "5.2.0+trunk", user_name: mac1000, zfs_pool: "obuilder" }
+    - { role: base-image, version: "4.14.1", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "5.0.0", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "5.1.0", user_name: mac1000, zfs_pool: "obuilder", default: true }
+    - { role: base-image, version: "5.2.0+trunk", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: busybox, user_name: mac1000, zfs_pool: "obuilder" }
     - ocluster
   environment:
     PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
