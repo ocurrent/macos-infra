@@ -1,27 +1,24 @@
-## OCluster/OBuilder macOS Infrastructure
-
-This document tells the ongoing story of supporting macOS in OCaml's Continuous Integration (CI) tools. In particular how the OBuilder port is currently implemented, how this fits into the OCluster worker and the manual process or keeping things up to date.
+# OCluster/OBuilder macOS Infrastructure
+This document tells the ongoing story of supporting macOS in OCaml's Continuous Integration (CI) tools. In particular how the OBuilder port is currently implemented, how this fits into the OCluster worker and the process for keeping things up to date.
 
 <!-- TOC -->
-
-- [OCluster/OBuilder macOS Infrastructure](#oclusterobuilder-macos-infrastructure)
 - [The Big Picture](#the-big-picture)
 - [The Implementation](#the-implementation)
     - [Overview](#overview)
     - [Snapshotting Filesystem](#snapshotting-filesystem)
-    - [Global System Dependencies](#global-system-dependencies)
-    - [Tricking Homebrew with FUSE](#tricking-homebrew-with-fuse)
-    - [Rsyncing to Home](#rsyncing-to-home)
-    - [Docker-esque Base Images](#docker-esque-base-images)
-- [OCluster macOS Worker](#ocluster-macos-worker)
-    - [Building a macOS Base Directory](#building-a-macos-base-directory)
-- [Ansible Playbook](#ansible-playbook)
-- [Starting and Stopping](#start-stop)
-- [Current Deployment and Future Steps](#current-deployment-and-future-steps)
-- [Thanks](#thanks)
+    - [ZFS on macOS Architecture](#zfs-on-macos-architecture-overview)
+
+    - [Building a macOS Base Directory]()
+- [Deploy macOS worker with ZFS](#deploy-macos-worker-with-zfs)
+    - [Clear any existing installation](#clear-any-existing-installation)
+    - [Pre-requisites](#pre-requisites)
+    - [Configure a ZFS pool](#configure-a-zfs-pool)
+    - [Deploying the worker](#deploying-the-worker)
+    - [ZFS state](#zfs-state)
+    - [Starting and Stopping](#starting-and-stopping)
+    - [Cloning ZFS builds](#cloning-zfs-builds)
 
 <!-- /TOC -->
-
 ## The Big Picture
 
 [OCurrent](https://github.com/ocurrent/ocurrent) is an OCaml library for building incremental pipelines. Pipelines can be thought of as directed graphs with each node being some kind of job that feeds its results into the next node. For an example, have a look at [the OCaml deploy pipeline](https://deploy.ci.ocaml.org/).
@@ -40,196 +37,220 @@ Although not part of the current implementation, the idea is to have multiple us
 
 ### Snapshotting Filesystem
 
-On macOS there is a [port of ZFS](https://openzfsonosx.org/) that, at the time, works quite well but not perfectly. Many hours were lost debugging what ended up being small bugs in ZFS. This is what inspired adding a very portable and reliable, but slow and memory-inefficient [`rsync` store backend](https://github.com/ocurrent/obuilder/pull/88). This is what is currently used in the macOS implementation which so far has been very reliable and once the caches are hot, the slow down isn't too noticeable.
+On macOS there is a [port of ZFS](https://openzfsonosx.org/) that, at the time, works quite well but not perfectly. Many hours were lost debugging what ended up being small bugs in ZFS. This is what inspired adding a very portable and reliable, but slow and memory-inefficient [`rsync` store backend](https://github.com/ocurrent/obuilder/pull/88). This is what was deployed originally but it proved to be operationally unreliable. SO a second effort was made to use ZFS on MacOS, and with some bugfixes this solution is now used in production.
 
-### Global System Dependencies
+### ZFS on macOS architecture overview
 
-Opam, the OCaml package manager, is happy to have multiple opam roots on a system typically in the home directory of the user (`~/.opam`). This is great as running something like `sudo -u macos-builder-705 -i /bin/bash -c 'opam install irmin'` will use `macos-builder-705`'s home directory to build `irmin`. This provides an illusion of isolation similar to `runc`.
+A macOS base image consists of a user home directory and a brew installation directory.  Typically, this is `/Users/mac1000` and either `/usr/local` (on Intel silicon) or `/opt/homebrew` (on Apple silicon).
 
-Homebrew, a macOS system package manager, is not so willing to be installed anywhere. [You can do it](https://docs.brew.sh/Installation#untar-anywhere), but as they say:
+An Obuilder job consists of a number of steps within the specification file.  Each job step is converted into a hash which allows steps to be cached and referenced.  Each step is stored on a `results` ZFS volume which contains the log of STDOUT which was written during execution.  ZFS subvolumes named `home` and `brew` store the state of the the home directory and brew installation for each step.  These volumes have snapshots `@snap` in place which are cloned for the next step.
 
-> ...do yourself a favour and install to /usr/local on macOS Intel, /opt/homebrew on macOS ARM ... Pick another prefix at your peril!
+When a worker is first started, it will create a recursive clone of the base image pool, then working in a clone of that pool, the first step of the job spec will be applied.  Perhaps installing Opam packages.  On successful completion, a recursive snapshot will be taken ready to be cloned for the next step.  If the job fails, the clone will be discarded.
 
-### Tricking Homebrew with FUSE
-
-We want to have multiple Homebrew installations that all believe they are installed in `/usr/local`. Without this, Homebrew can't use "bottles" which are pre-built binaries making builds much faster.
-
-The proposed solution is to mount a FUSE (filesystem in userspace) filesystem onto `/usr/local` which intercepts calls and redirects them based on who the calling user is. Since macOS Catalina this requires [System Integrity Protection (SIP) to be disabled](https://developer.apple.com/documentation/security/disabling_and_enabling_system_integrity_protection).
-
-<p align="center">
-<img style="width:40%" src="./docs/fuse.svg" alt="A diagram showing the mapping from /usr/local to the calling user's home directory."/>
-</p>
-
-FUSE luckily supplies all calls with a `fuse_context` which provides the `uid` of the calling user. We can use this to redirect to the correct home directory. This is what the [obuilder-fs](https://github.com/patricoferris/obuilder-fs) filesystem does. The implementation ensures that it is mounted and all calls to `/usr/local` are redirected. This does have some cost, but in practice most packages make use of a few core system dependencies.
-
-### Rsyncing to Home
-
-With the scheme described above, each user's home directory is easy to find as it is based on the `uid`. One problem though is that for each build step (`run`, `copy`...) we take a snapshot so we can later restore from it. This means we need to sync the home directory with the snapshot. This is also important for packages that are not relocatable (at the time of writing `ocamlfind` is an example).
-
-The workaround is to `rsync` the snapshot from the store to the user's home directory every time we execute a step. This is exactly what happens in this [code in the macOS sandbox implementation](https://github.com/patricoferris/obuilder/blob/8c3f200b519ad14a5f70787e42f59ec7db229d3c/lib/sandbox.macos.ml#L61).
-
-### Docker-esque Base Images
-
-OBuilder spec files start with a `(from ...)` stage. This identifies the image that should be used as a basis for the build. In OCaml-related projects this tends to be one of the [docker base images](https://base-images.ocamllabs.io/).
-
-In order to minimise the amount of additional logic that would be needed for macOS inside things like [ocaml-ci](https://ci.ocamllabs.io/), [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci) and [opam-health-check](http://check.ocamllabs.io/), it makes sense for the macOS version to be as similar as possible to the docker base images.
-
-This includes:
-
- - Having both `opam.2.0.X` and `opam.2.1.X` installed and ready to use by sym-linking to `/usr/local/bin/opam` (a.k.a `~/local/bin/opam`).
- - Being clever (thanks @kit-ty-kate) with the `.bash_profile` script to reuse the name of the base image (i.e. `(from "macos-homebrew-ocaml-4.11")`) to setup things like the path to the system compiler. This means the Obuilder specs don't need to worry about the OCluster worker implementation details.
-
-Given what macOS actually needs is a directory ready to copy into the home directory of the user, there's also a [simple copying implementation of this initial `(from ...)` stage (the `FETCHER`)](https://github.com/patricoferris/obuilder/blob/macos-v2/lib/user_temp.ml). However, the Docker fetcher also works if the image is formatted in particular way, more on this below.
-
-## OCluster macOS Worker
-
-Relevant PR: https://github.com/ocurrent/ocluster/pull/152
-
-### Building a macOS Base Directory
-
-This repository contains an OCaml executable (`main.ml`) for building macOS "base directories". Primarily, this installs Homebrew and opam and actually reuses the macOS OBuilder backend to do so. You can see from the spec file described in `main.ml` that sometimes we need to be careful with paths in macOS spec files. Only `/usr/local` is remapped so absolute paths anywhere else will all be shared and should not be allowed.
-
-We still use system compilers installed on the worker machine. The OBuilder implementation always sources a `.obuilder_profile.sh` file before building. There we can ensure the correct `PATH` is set. To easily install system compilers (for different versions of the compiler) there is [the opam-sysinstall plugin](https://github.com/patricoferris/opam-sysinstall).
-
-To build a new base directory you can run:
+A typical job would run as follows:
 
 ```
-sudo dune exec -- ./main.exe --ocaml-version=4.14.0 --rsync=/Volumes/rsync --uid=705 --fallback=/Users/administrator/lib --scoreboard=/Users/administrator/scoreboard --verbosity=info
+# Create a results folder based upon the base image name, say `macos-homebrew-ocaml-5.0`
+zfs create obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525
+
+# Try to open the snapshot which would indicate that the job had completed (so this will fail for now)
+zfs mount obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525@snap
+
+# Clone the base image into the results pool
+zfs clone -o mountpoint=none obuilder/base-image/macos-homebrew-ocaml-5.0/home@snap obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525/home
+zfs clone -o mountpoint=none obuilder/base-image/macos-homebrew-ocaml-5.0/brew@snap obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525/brew
+
+# Take a snapshot of the results
+zfs snapshot -r obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525@snap
+
+# Move on to the first step of the job specification which relies on the hash of the base image
+
+# Try to open the snapshot which would indicate that the job had completed (this now succeeds)
+zfs mount obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525@snap
+
+# Loop start
+
+# Try to open the snapshot representing the next step of the job (which will fail as it has not been run)
+zfs mount obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c@snap
+
+# Clone the base image snapshot into a new results pool
+zfs clone obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525@snap obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c
+zfs clone -o mountpoint=none obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525/home@snap obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/home
+zfs clone -o mountpoint=none obuilder/result/645c2ef2f88fa001579e248001924f94ff36415fd9c5ec359cc6a6e8cd432525/brew@snap obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/brew
+
+# Mount the results pool over the homebrew and user home directory
+zfs set mountpoint=/Users/mac1000 obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/home
+zfs set mountpoint=/usr/local obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/brew
+
+# Execute the job specification step, perhaps something like `ln -f ~/local/bin/opam-2.1 ~/local/bin/opam`
+
+# Unmount the resulting pools (we won't need them again)
+zfs set mountpoint=none obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/home
+zfs set mountpoint=none obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c/brew
+
+# Create a recursive snapshot of the results pool
+zfs snapshot -r obuilder/result/a5f372ff59673df9d9209889009b6b09f252fbea3dea15bf642833ee010f264c@snap
+
+# Loop
 ```
 
-The final build will be in `/Users/mac705` (or in the final snapshot in the rsync store). If you want to use the `User_temp` copying `FETCHER` then you can
+The log file for a job is split across the multiple result snapshots so when a job runs there may be a dozen or more snapshot which are accessed to read the logs up to this point.  The file is called `log` and is located in `<ZFS pool>/results/<SHA>@snap/log`
+
+This blog post https://tarides.com/blog/2023-08-02-obuilder-on-macos/ goes into more detail about the ZFS based implementation.
+Before the ZFS implementation we had a version that used `rsync` and `macfuse` that is documented in [README-rsync.md](./README-rsync.md).
+
+## Deploy macOS worker with ZFS
+
+### Clear any existing installation
+
+Remove macFuse via System Preferences.
+
+If you have a previous deployment or are unsure of the state of your Mac, then try this very dangerous playbook which removes the following:
+
+- ~/ocluster
+- ~/lib
+- ~/scoreboard
+- ~/.opam
+- /Users/mac1000
+- /var/lib/ocluster-worker
+- /Volumes/rsync
+- **Homebrew** (either /usr/local/ or /opt/homebrew)
+
+Run it as follows
 
 ```
-sudo rsync -aHq /Users/mac705/ /Users/macos-homebrew-ocaml-4.14
+ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev wipe-mac.yml
 ```
 
-And use this from stage in your spec file `(from macos-homebrew-ocaml-4.14)`. Note that the OCluster PR still uses the Docker fetcher in the PR, but not on the machines. The machines have the following small patch that hopefully in the future can be removed.
+### Pre-requisites
 
-```diff
-diff --git a/obuilder b/obuilder
---- a/obuilder
-+++ b/obuilder
-@@ -1 +1 @@
--Subproject commit 9c910f0693e938b491d3ba5ba09b43a4469b7c2d
-+Subproject commit 9c910f0693e938b491d3ba5ba09b43a4469b7c2d-dirty
-diff --git a/worker/obuilder_build.ml b/worker/obuilder_build.ml
-index 9cebd2b..0a0af6d 100644
---- a/worker/obuilder_build.ml
-+++ b/worker/obuilder_build.ml
-@@ -22,7 +22,7 @@ type t = {
- }
-
- module Sandbox = Obuilder.Sandbox
--module Fetcher = Obuilder.Docker
-+module Fetcher = Obuilder.User_temp
-
- let ( / ) = Filename.concat
-```
-
-The Docker `FETCHER` does work but we don't have a [base-images](https://github.com/ocurrent/docker-base-images) equivalent to keep things up to date yet. To make a compatible Docker image you can run `docker build` with the following Dockerfile:
-
-```Dockerfile
-FROM scratch
-COPY ./mac705-macos-homebrew-ocaml-4.14 /
-CMD [ "/bin/bash" ]
-```
-
-And push the image.
-
-## Ansible Playbook
-
-The Ansible playbook can be used to deploy Mac workers.  The following pre-requisites should be satisfied:
+The Ansible playbook can be used to deploy Mac workers.  The following pre-requisites must be satisfied:
 
 - Security & Privacy \ General \ Require Password -- disables screen saver
-- Users & Groups \ Login Options \ Automatic login as administrator
 - Sharing \ Screen sharing -- enables VNC
 - Sharing \ Remote login -- enables SSH.  Also select the “Allow full disk access for remote users” checkbox.
 - Energy Saver \ Prevent your Mac from automatically sleeping
 - Energy Saver \ Start up automatically after power failure
-- Install Apple Developer Command line tools
+- Install Apple Developer Command line tools `xcode-select --install`
 - Turn off SIP by entering Recovery Mode (Intel: Command-R; M1: hold power button) `csrutil disable`
-- Install [macFUSE](https://osxfuse.github.io) which requires approval via System Preferences and a reboot of the system.
-  Use `brew install --cask macfuse` which will require a homebrew install.
-- Install [Docker Desktop for Mac](https://docs.docker.com/desktop/mac/install/)
-- Set Docker to automatically start at sign in
-- Add the capability file for the scheduler pool you want to join to `./secrets/pool-macos-[arch].cap` (creating the `secrets` directory in the project root). For more info on the scheduler see [ocurrent/ocluster](https://github.com/ocurrent/ocluster).
+- Install [OpenZFS on OSX](https://openzfsonosx.org/wiki/Downloads) which requires approval via System Preferences and sometimes a reboot of the system.
 - Add your ssh key to the `~/.ssh/authorized_keys` and update your `~/.ssh/config` so that you can SSH to the mac without prompting for a username:
 
 ```
-Host mac-mon-*
+Host *
 	User administrator
 ```
 
-Run the playbook as follows.  I have used `--limit` to target a single worker.
+> Homebrew is not a pre-requisite as it is installed by the playbook
+
+Unlike previous deployments, the recommendation is to have the Mac at the login screen, not sign in at the desktop.  This means that `Finder` will not be running which reduces the CPU load.
+
+### Configure a ZFS Pool
+
+You must now configure a ZFS pool for Obuilder to use.
+
+Shirk the existing APFS volume using _Disk Utility_.
+
+1) Open _Disk Utility_
+2) Choose _Partition_ (not _Volume_)
+3) Click _+_
+4) Click _Add Partition_
+5) Set the name/size
+6) Choose _ZFS Dataset_ from the format dropdown
+
+> _ZFS Dataset_ is only available after OpenZFS is installed
+
+_Disk Utility_ will online resize the existing volume and create the new partition.  Once complete use `diskutil list` to identify the name, typically, `/dev/disk0s3`.
+
+I am using a virtual machine on my MacPro so I have just added a second hard disk.  This is locatable via `diskutil list`.
+
+and a ZFS pool can be created like this:
+
+```sh=
+sudo zpool create obuilder /dev/disk0s3
+sudo zfs set atime=off obuilder
+sudo zfs set checksum=off obuilder
+sudo zfs set compression=off obuilder
+```
+
+> `checksum=off` is not the recommended configuration for a production ZFS pool but it does use less CPU.
+
+For testing, it may be convenient to create an empty file and use that for the ZFS pool.
+
+```sh=
+sudo mkfile 20G /Volumes/zfs
+sudo zpool create obuilder /Volumes/zfs
+sudo zfs set atime=off obuilder
+sudo zfs set checksum=off obuilder
+sudo zfs set compression=off obuilder
+```
+
+The result should be visble via `zpool`:
+
+```sh=
+% zpool list
+NAME       SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
+obuilder  49.5G  1.88M  49.5G        -         -     0%     0%  1.00x    ONLINE  -
+```
+
+### Deploying the worker
+
+Run the playbook as below  I have used `--limit` to target a single worker.
 
 ```sh=
 ansible-playbook -i hosts --limit i7-worker-01 playbook.yml
 ```
 
-## Starting and Stopping
+### ZFS state
 
-Ocluster-worker is run via LaunchAgent.
+Before any job are performed this will be the state of the ZFS pool:
 
-The Ansible scripts create a service definition `.plist` in `~/Library/LaunchAgents/com.tarides.ocluster.worker.plist`.
+```
+% zfs list
+NAME                                                 USED  AVAIL  REFER  MOUNTPOINT
+obuilder                                            2.63G  45.3G  1.69M  /Volumes/obuilder
+obuilder/base-image                                 2.63G  45.3G  1.69M  /Volumes/obuilder/base-image
+obuilder/base-image/busybox                         5.05M  45.3G  1.68M  /Volumes/obuilder/base-image/busybox
+obuilder/base-image/busybox/brew                    1.68M  45.3G  1.68M  none
+obuilder/base-image/busybox/home                    1.69M  45.3G  1.69M  none
+obuilder/base-image/macos-homebrew-ocaml-4.14       1.30G  45.3G  1.68M  /Volumes/obuilder/base-image/macos-homebrew-ocaml-4.14
+obuilder/base-image/macos-homebrew-ocaml-4.14/brew   715M  45.3G   715M  none
+obuilder/base-image/macos-homebrew-ocaml-4.14/home   613M  45.3G   613M  none
+obuilder/base-image/macos-homebrew-ocaml-5.0        1.32G  45.3G  1.68M  /Volumes/obuilder/base-image/macos-homebrew-ocaml-5.0
+obuilder/base-image/macos-homebrew-ocaml-5.0/brew    716M  45.3G   716M  none
+obuilder/base-image/macos-homebrew-ocaml-5.0/home    636M  45.3G   636M  none
+```
+
+### Starting and Stopping
+
+Ocluster-worker is run as a launch daemon.
+
+The Ansible scripts create a system wide service definition `.plist` in `/Library/LaunchDaemons/com.tarides.ocluster.worker.plist`.
 
 To start the service run
 
 ```shell=
-launchctl load ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+sudo launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
 ```
 
 To stop the service run
 
 ```shell=
-launchctl unload ~/Library/LaunchAgents/com.tarides.ocluster.worker.plist
+sudo launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
 ```
 
 STDOUT and STDERR are redirected to `~/ocluster.log`
-## Clearing disk space
 
-Sometimes the rsync cache fills up and needs manual intervention. In that case run:
+### Cloning ZFS builds
 
-``` shell
-# Stop the service
-launchctl unload Library/LaunchAgents/com.tarides.ocluster.worker.plist
-
-# Create an empty directory (may already exist)
-mkdir /tmp/obuilder-empty
-
-# Rsync an empty directory to result-tmp
-sudo rsync -aHq --delete /tmp/obuilder-empty/ /Volumes/rsync/result-tmp/
-
-# Unmount homebrew redirection, otherwise ocluster.worker will not find
-# its dependencies.  Either /opt/homebrew on m1 or /usr/local on Intel
-sudo umount /opt/homebrew
-sudo umount /usr/local
-
-# Restart the service
-launchctl load Library/LaunchAgents/com.tarides.ocluster.worker.plist
-```
-
-Check the playbook `flush-rsync.yml` which automatically performs these steps including:
-* Pausing the worker in the pool
-* Unloading the worker service
-* Update the OCluster code from GitHub
-* Loading the worker service
-* Unpausing the worker in the pool
+It is possible to clone the base images and the cache between workers.  After one machine is built, setup SSH keys between the workers then use ZFS to clone the filesystems between the machines.
 
 ```
-ansible-playbook -i hosts --limit i7-worker-04.macos.ci.dev flush-rsync.yml
+for pool in obuilder/cache/c-homebrew \
+            obuilder/cache/c-opam-archives \
+            obuilder/base-image/busybox \
+            obuilder/base-image/macos-homebrew-ocaml-4.14 \
+            obuilder/base-image/macos-homebrew-ocaml-5.0 ; do \
+  sudo zfs send -R $pool@snap | ssh 192.168.10.40 sudo /usr/local/zfs/bin/zfs recv -Fdu obuilder ; \
+done
 ```
-
-## Current Deployment and Future Steps
-
-Currently the macOS workers have been used in [opam-repo-ci](https://github.com/ocurrent/opam-repo-ci/pull/116) although at the time of writing it is currently disabled. This is because the macOS machines still need frequent manual fixing and updating which I didn't have time for, the following steps are what is probably needed at a bare minimum to get things up and running in a more stable state.
-
- - Convert to using docker for the images -- this would require wrapping this `main.ml` script in an OCurrent pipeline to periodically rebuild the base images using a connected macOS worker. As far as I know, we don't yet have a way to take the output from one obuilder job and docker-ise it. @kit-ty-kate has kindly put most of this into [this comment](https://github.com/ocurrent/opam-repo-ci/pull/116#issuecomment-881396651).
- - More testing -- this includes on newer macOS versions (Monterey) and on Apple Silicon. Now that we use `rsync` I'm quite confident this should work with little effort (macFUSE also support Apple Silicon in recent releases).
-
-It is important to note that macOS will likely *always* need a slightly modified OBuilder spec file that is somewhat aware of it's limitations. See for example the [changes made for opam-repo-ci](https://github.com/kit-ty-kate/opam-repo-ci/blob/f8259948755dc09deabaada1e2d87dae2cbe1c42/lib/opam_build.ml#L45).
-
-There is also an out of date port of [opam-health-check](https://github.com/patricoferris/opam-health-check/commit/c19211583a9bacc994f31ec28e5dd1b780bcf1fd) that can build using macOS workers too. This is quite useful for testing the builder.
-
-## Thanks
-
-For the most part, I was simply the person implementing macOS CI. Much more experienced people very gladly helped answer all of my questions: thanks @talex5, @dra27, @avsm, @kit-ty-kate, @MagnusS, @MisterDA, @tmcgilchrist and @mtelvers.
