@@ -1,6 +1,7 @@
 ---
 
 - hosts: all
+  serial: 2
   tasks:
   - name: Check architecture intel
     set_fact: homebrew_prefix="/usr/local"
@@ -12,9 +13,6 @@
 
   - debug:
       var: homebrew_prefix
-
-- hosts: all
-  tasks:
 
   - name: Pause the worker
     shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
@@ -42,21 +40,59 @@
       - set checksum=off obuilder
       - set compression=off obuilder
 
-- hosts: all
-  name: Install Roles
-  roles:
-    - macos
-    - { role: base-image, version: "4.14.1", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: base-image, version: "5.0.0", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: base-image, version: "5.1.0", user_name: mac1000, zfs_pool: "obuilder", default: true }
-    - { role: base-image, version: "5.2.0+trunk", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: busybox, user_name: mac1000, zfs_pool: "obuilder" }
-    - ocluster
-  environment:
-    PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+  - name: Install roles macos
+    import_role:
+      name: macos
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-- hosts: all
-  tasks:
+  - name: Install base-image for 4.14.1
+    import_role:
+      name: base-image
+    vars:
+      version: 4.14.1
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 5.1.1
+    import_role:
+      name: base-image
+    vars:
+      version: 5.1.1
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: true
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 5.2.0+trunk
+    import_role:
+      name: base-image
+    vars:
+      version: 5.2.0+trunk
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install busybox
+    import_role:
+      name: busybox
+    vars:
+      user_name: mac1000
+      zfs_pool: obuilder
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Ocluster
+    import_role:
+      name: ocluster
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
   - name: Unpause the worker
     shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
