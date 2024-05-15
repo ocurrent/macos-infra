@@ -1,7 +1,7 @@
 ---
 
 - hosts: all
-  serial: 2
+  serial: 1
   tasks:
   - name: Check architecture intel
     set_fact: homebrew_prefix="/usr/local"
@@ -40,17 +40,34 @@
       - set checksum=off obuilder
       - set compression=off obuilder
 
+  - name: Remove /var/lib/ocluster-worker
+    become: yes
+    file:
+      state: absent
+      path: /var/lib/ocluster-worker
+
   - name: Install roles macos
     import_role:
       name: macos
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Install base-image for 4.14.1
+  - name: Install base-image for 4.14.2
     import_role:
       name: base-image
     vars:
-      version: 4.14.1
+      version: 4.14.2
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 5.0.0
+    import_role:
+      name: base-image
+    vars:
+      version: 5.0.0
       user_name: mac1000
       zfs_pool: obuilder
       default: false
@@ -64,18 +81,18 @@
       version: 5.1.1
       user_name: mac1000
       zfs_pool: obuilder
-      default: true
+      default: false
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Install base-image for 5.2.0+trunk
+  - name: Install base-image for 5.2.0
     import_role:
       name: base-image
     vars:
-      version: 5.2.0+trunk
+      version: 5.2.0
       user_name: mac1000
       zfs_pool: obuilder
-      default: false
+      default: true
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
