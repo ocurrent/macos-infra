@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.tarides.ocluster.monitor</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{ ansible_env.HOME }}/monitor.sh</string>
+	</array>
+	<key>StartCalendarInterval</key>
+	<array>
+{% for n in range(0, 60, 1) %}
+		<dict>
+			<key>Minute</key>
+			<integer>{{ n }}</integer>
+		</dict>
+{% endfor %}
+	</array>
+	<key>WorkingDirectory</key>
+	<string>{{ ansible_env.HOME }}</string>
+</dict>
+</plist>
