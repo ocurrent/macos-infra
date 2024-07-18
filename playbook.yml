@@ -21,11 +21,12 @@
     - docker
     - zfs
     - ocaml
-    - { role: base-image, version: "4.14.1", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: base-image, version: "5.1.1", user_name: mac1000, zfs_pool: "obuilder", default: true }
-    - { role: base-image, version: "5.2.0+trunk", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "4.14.2", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "5.1.1", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "5.2.0", user_name: mac1000, zfs_pool: "obuilder", default: true }
     - { role: busybox, user_name: mac1000, zfs_pool: "obuilder" }
     - ocluster
+    - monitor
   environment:
     PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
