@@ -160,10 +160,24 @@ Host mac-mon-*
 	User administrator
 ```
 
-Run the playbook as follows.  I have used `--limit` to target a single worker.
+Before running the playbook, you will need
+
+- the vault password, and
+- the secrets file.
+
+Ask consult the [ansible docs on creating encrypted files][ansible-docs] if new credentials are needed.
+
+[ansible-docs]: https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files
+
+Then
+
+- Save the password in `./secerts/pwd`.
+- Save the secrets file in `./secrets/secret-vars.yml`.
+
+Run the playbook as follows. (I have used `--limit` to target a single worker).
 
 ```sh=
-ansible-playbook -i hosts --limit i7-worker-01 playbook.yml
+ansible-playbook -e @./secrets/secret-vars.yml --vault-password-file ./secrets/pwd -i hosts --limit i7-worker-01 playbook.yml
 ```
 
 ## Starting and Stopping
