@@ -15,17 +15,12 @@
     mode: '0644'
   become: yes
 
-- name: Stop ocluster via launchctl
+- name: Stop monitor process via launchctl
   shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.monitor.plist
   become: yes
   register: launchctl_check
   failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
-- name: Start ocluster via launchctl
+- name: Start monitor process via launchctl
   shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.monitor.plist
   become: yes
-
-- name: delete old log
-  file:
-    path: "{{ ansible_env.HOME }}/monitor.log"
-    state: absent
