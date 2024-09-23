@@ -1,7 +1,7 @@
 ---
 
 - hosts: all
-  serial: 1
+  serial: 2
   tasks:
   - name: Check architecture intel
     set_fact: homebrew_prefix="/usr/local"
@@ -29,7 +29,7 @@
     become: yes
 
   - name: Create new pool
-    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool create -f obuilder /dev/disk0s3"
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool create -f obuilder {{ zfs_partition }}"
     become: yes
 
   - name: Set defaults
