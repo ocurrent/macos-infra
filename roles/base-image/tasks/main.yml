@@ -132,14 +132,18 @@
       for i in $homebrew/Cellar/*/*/bin; do echo 'export PATH="'$i':$PATH' >> ~/.obuilder_profile.sh ; done
 
       # Download opam
-      curl https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh -o install.sh
+      curl -s https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh -o install.sh
       chmod +x install.sh
-      ./install.sh --download-only
-      ./install.sh --download-only --dev
+      for version in 2.1.6 2.2.1 dev ; do
+        if [ "$version" = "dev" ] ; then
+          ./install.sh --dev --download-only
+        else
+          ./install.sh --version $version --download-only
+        fi
+        chmod a+x opam-*
+        mv opam-* $homebrew/bin/opam-"${version%.*}"
+      done
       rm install.sh
-      chmod +x opam-2.1.* opam-2.2.*
-      mv opam-2.1.* $homebrew/bin/opam-2.1
-      mv opam-2.2.* $homebrew/bin/opam-dev
 
       # Default link 2.1 to opam
       ln $homebrew/bin/opam-2.1 $homebrew/bin/opam

@@ -1,7 +1,7 @@
 ---
 
 - hosts: all
-  serial: 1
+  serial: 2
   tasks:
   - name: Check architecture intel
     set_fact: homebrew_prefix="/usr/local"
@@ -29,7 +29,7 @@
     become: yes
 
   - name: Create new pool
-    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool create -f obuilder /dev/disk0s3"
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zpool create -f obuilder {{ zfs_partition }}"
     become: yes
 
   - name: Set defaults
@@ -93,6 +93,28 @@
       user_name: mac1000
       zfs_pool: obuilder
       default: true
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 5.3.0~alpha1
+    import_role:
+      name: base-image
+    vars:
+      version: 5.3.0~alpha1
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 5.4.0
+    import_role:
+      name: base-image
+    vars:
+      version: 5.4.0+trunk
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 

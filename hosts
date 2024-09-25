@@ -1,11 +1,11 @@
-i7-worker-01.macos.ci.dev
-m1-worker-01.macos.ci.dev
-i7-worker-02.macos.ci.dev
-m1-worker-02.macos.ci.dev
-i7-worker-03.macos.ci.dev
-m1-worker-03.macos.ci.dev
-i7-worker-04.macos.ci.dev
-m1-worker-04.macos.ci.dev
+i7-worker-01.macos.ci.dev zfs_partition=/dev/disk0s3
+m1-worker-01.macos.ci.dev zfs_partition=/dev/disk0s3
+i7-worker-02.macos.ci.dev zfs_partition=/dev/disk0s3
+m1-worker-02.macos.ci.dev zfs_partition=/dev/disk0s3
+i7-worker-03.macos.ci.dev zfs_partition=/dev/disk0s3
+m1-worker-03.macos.ci.dev zfs_partition=/dev/disk0s3
+i7-worker-04.macos.ci.dev zfs_partition=/dev/disk0s3
+m1-worker-04.macos.ci.dev zfs_partition=/dev/disk0s3
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
