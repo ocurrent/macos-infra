@@ -26,6 +26,11 @@
     dest: "{{ ansible_env.HOME }}/ocluster"
     force: yes
 
+- name: Update opam
+  shell: opam update && opam upgrade -y
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
 - name: Dune build
   shell: eval $(opam env) && dune build --release
   args:
