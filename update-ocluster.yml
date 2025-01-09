@@ -46,6 +46,10 @@
       state: absent
       path: /var/lib/ocluster-worker
 
+  - name: Install homebrew
+    import_role:
+      name: homebrew
+
   - name: Install roles macos
     import_role:
       name: macos
@@ -63,47 +67,14 @@
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Install base-image for 5.0.0
+  - name: Install base-image for 5.3.0
     import_role:
       name: base-image
     vars:
-      version: 5.0.0
-      user_name: mac1000
-      zfs_pool: obuilder
-      default: false
-    environment:
-      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
-
-  - name: Install base-image for 5.1.1
-    import_role:
-      name: base-image
-    vars:
-      version: 5.1.1
-      user_name: mac1000
-      zfs_pool: obuilder
-      default: false
-    environment:
-      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
-
-  - name: Install base-image for 5.2.0
-    import_role:
-      name: base-image
-    vars:
-      version: 5.2.0
+      version: 5.3.0
       user_name: mac1000
       zfs_pool: obuilder
       default: true
-    environment:
-      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
-
-  - name: Install base-image for 5.3.0~alpha1
-    import_role:
-      name: base-image
-    vars:
-      version: 5.3.0~alpha1
-      user_name: mac1000
-      zfs_pool: obuilder
-      default: false
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
