@@ -22,9 +22,7 @@
     - zfs
     - ocaml
     - { role: base-image, version: "4.14.2", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: base-image, version: "5.1.1", user_name: mac1000, zfs_pool: "obuilder", default: false }
-    - { role: base-image, version: "5.2.0", user_name: mac1000, zfs_pool: "obuilder", default: true }
-    - { role: base-image, version: "5.3.0~alpha1", user_name: mac1000, zfs_pool: "obuilder", default: false }
+    - { role: base-image, version: "5.3.0", user_name: mac1000, zfs_pool: "obuilder", default: true }
     - { role: base-image, version: "5.4.0+trunk", user_name: mac1000, zfs_pool: "obuilder", default: false }
     - { role: busybox, user_name: mac1000, zfs_pool: "obuilder" }
     - ocluster
