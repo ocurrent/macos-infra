@@ -156,6 +156,10 @@
       echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.obuilder_profile.sh
       echo 'export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> ~/.obuilder_profile.sh
       echo 'export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH' >> ~/.obuilder_profile.sh # /opt is used for homebrew on macOS/arm64
+      # For arm64 architectures Homebrew no longer links into /usr/local by default.
+      # We add the include files and libraries paths to fix breakages for many packages in the ci that expect these files in /usr/local.
+      echo 'export C_INCLUDE_PATH=$homebrew/include:$C_INCLUDE_PATH' >> ~/.obuilder_profile.sh
+      echo 'export LIBRARY_PATH=$homebrew/lib:$LIBRARY_PATH' >> ~/.obuilder_profile.sh
       echo 'export OPAMYES=1' >> ./.obuilder_profile.sh
       echo 'export OPAMCONFIRMLEVEL=unsafe-yes' >> ./.obuilder_profile.sh
       echo 'export OPAMERRLOGLEN=0' >> ./.obuilder_profile.sh
