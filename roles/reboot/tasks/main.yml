@@ -1,6 +1,6 @@
 
 - name: Pause the worker
-  shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+  shell: ocluster-admin -c ~/admin.cap pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
   delegate_to: 127.0.0.1
 
 - name: Stop ocluster via launchctl
@@ -20,5 +20,5 @@
   become: yes
 
 - name: Unpause the worker
-  shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+  shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
   delegate_to: 127.0.0.1

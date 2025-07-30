@@ -15,7 +15,7 @@
       var: homebrew_prefix
 
   - name: Pause the worker
-    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 
   - name: Stop ocluster via launchctl
@@ -78,17 +78,6 @@
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Install base-image for 5.4.0
-    import_role:
-      name: base-image
-    vars:
-      version: 5.4.0+trunk
-      user_name: mac1000
-      zfs_pool: obuilder
-      default: false
-    environment:
-      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
-
   - name: Install busybox
     import_role:
       name: busybox
@@ -105,6 +94,6 @@
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
   - name: Unpause the worker
-    shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 

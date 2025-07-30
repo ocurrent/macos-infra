@@ -23,10 +23,10 @@ fi
 for nn in 01 ; do
   NAME="$PREFIX-worker-$nn"
   FQDN="$NAME.macos.ci.dev"
-  ci3-admin pause --wait $POOL $NAME
+  ocluster-admin -c ~/admin.cap pause --wait $POOL $NAME
   ssh $FQDN launchctl unload "~/Library/LaunchAgents/com.tarides.ocluster.worker.plist"
   ansible-playbook -i hosts --limit $FQDN playbook.yml
   ssh $FQDN launchctl load "~/Library/LaunchAgents/com.tarides.ocluster.worker.plist"
-  ci3-admin unpause $POOL $NAME
+  ocluster-admin -c ~/admin.cap unpause $POOL $NAME
 done
 

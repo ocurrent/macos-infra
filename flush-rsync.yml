@@ -18,7 +18,7 @@
   tasks:
 
   - name: Pause the worker
-    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 
   - name: Stop the ocluster service
@@ -66,11 +66,11 @@
     environment:
       PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-#  - name: Create base image 4.14.1
+#  - name: Create base image 4.14.2
 #    import_role:
 #      name: base-image
 #    vars:
-#      version: "4.14.1"
+#      version: "4.14.2"
 #      user_name: "mac1000"
 #    environment:
 #      PATH: '{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
@@ -95,6 +95,6 @@
 #    shell: launchctl load {{ ansible_env.HOME}}/Library/LaunchAgents/com.tarides.ocluster.worker.plist
 
   - name: Unpause the worker
-    shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 
