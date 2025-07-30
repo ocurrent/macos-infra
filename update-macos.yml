@@ -1,17 +1,14 @@
 ---
 
 - hosts: all
+  serial: 1
   tasks:
-  - name: Download Software Updates
-    command: softwareupdate --download --all --agree-to-license
-    become: yes
-
   - name: Pause the worker
-    shell: ci3-admin pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 
   - name: Install Software Updates
-    command: softwareupdate --no-scan --install --all --agree-to-license
+    command: softwareupdate -i -a -R
     register: update
     async: 7200
     poll: 60
@@ -25,6 +22,6 @@
     become: yes
 
   - name: Unpause the worker
-    shell: ci3-admin unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
     delegate_to: 127.0.0.1
 

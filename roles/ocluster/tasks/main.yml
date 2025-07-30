@@ -27,7 +27,7 @@
     force: yes
 
 - name: Update opam
-  shell: opam update && opam upgrade -y
+  shell: opam update -y && opam upgrade -y --confirm-level=unsafe-yes
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
