@@ -1,0 +1,56 @@
+---
+
+# Clear obuilder's build cache so it re-imports the current base images.
+#
+# Why: deploy-base-images.yml is non-destructive (it does not wipe the zpool),
+# so obuilder keeps its previously-imported base-image layers and cached
+# results. After a base-image bump those cached layers are stale — builds reuse
+# the OLD compiler (e.g. 4.14.2 instead of 4.14.4) and, because the old result
+# datasets predate the brew/home sub-volume layout, obuilder fails with
+# `zfs set mountpoint=/Users/mac1000 .../home: dataset does not exist`.
+# (update-ocluster.yml avoided this by destroying the whole pool.)
+#
+# This destroys ONLY obuilder's result/result-tmp/state/cache-tmp datasets
+# (exact top-level name match), forcing obuilder to recreate them and re-import
+# the base images on restart. It PRESERVES obuilder/base-image (the images) and
+# obuilder/cache (the homebrew + opam download caches).
+#
+# Run one worker at a time, e.g.:
+#   ansible-playbook clean-obuilder-cache.yml --limit i7-worker-01.macos.ci.dev
+
+- hosts: all
+  serial: 1
+  vars:
+    zfs: "{{ ansible_env.HOME }}/zfs/bin/zfs"
+  tasks:
+  - name: Pause the worker
+    shell: ocluster-admin -c ~/admin.cap pause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+
+  - name: Stop ocluster via launchctl
+    shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+    become: yes
+    register: launchctl_check
+    failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
+
+  - name: Find obuilder cache/result datasets to destroy (exact top-level names only)
+    shell: "{{ zfs }} list -H -o name -d 1 obuilder | grep -E 'obuilder/(result|result-tmp|state|cache-tmp)$' || true"
+    register: to_destroy
+    changed_when: false
+
+  - name: Show what will be destroyed
+    debug:
+      var: to_destroy.stdout_lines
+
+  - name: Destroy stale obuilder datasets
+    shell: "{{ zfs }} destroy -r -f {{ item }}"
+    loop: "{{ to_destroy.stdout_lines }}"
+    become: yes
+
+  - name: Start ocluster via launchctl
+    shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+    become: yes
+
+  - name: Unpause the worker
+    shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1

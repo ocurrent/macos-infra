@@ -1,0 +1,117 @@
+---
+
+# Deploy an additional OCaml 5.5.0 base image to the macOS workers and replace
+# the 4.14.3 image with 4.14.4 where that has not already been done.
+#
+# Does NOT wipe the ZFS pool. The base-image role keys on the short version
+# (e.g. "4.14"), so installing 4.14.4 destroys and rebuilds the existing 4.14
+# dataset (4.14.3), while 5.5.0 creates a brand-new 5.5 dataset. The default
+# image (5.4 -> macos-homebrew) is left untouched.
+#
+# IMPORTANT: this playbook also clears obuilder's build cache (result /
+# result-tmp / state / cache-tmp) at the end. That step is NOT optional and is
+# why it lives here rather than in a separate playbook: rebuilding the
+# base-image datasets alone does nothing, because obuilder keys a
+# `FROM macos-homebrew-ocaml-X` base by NAME and keeps reusing its previously
+# imported layers — builds then run the OLD compiler and fail with
+# `zfs set mountpoint=/Users/mac1000 .../home: dataset does not exist`. Clearing
+# the cache forces obuilder to re-import the new base images. (base-image and
+# the homebrew/opam download cache under obuilder/cache are preserved.)
+#
+# Run one worker at a time, e.g.:
+#   ansible-playbook deploy-base-images.yml --limit i7-worker-03.macos.ci.dev
+#
+# For the two workers already carrying 4.14.4 (m1-worker-01, m1-worker-03) skip
+# the 4.14.4 rebuild:
+#   ansible-playbook deploy-base-images.yml --limit m1-worker-03.macos.ci.dev -e install_4144=false
+
+- hosts: all
+  serial: 1
+  tasks:
+  - name: Check architecture intel
+    set_fact: homebrew_prefix="/usr/local"
+    when: ansible_architecture == "x86_64"
+
+  - name: Check architecture arm
+    set_fact: homebrew_prefix="/opt/homebrew"
+    when: ansible_architecture == "arm64"
+
+  - debug:
+      var: homebrew_prefix
+
+  - name: Pause the worker
+    shell: ocluster-admin -c ~/admin.cap pause --wait macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
+
+  - name: Stop ocluster via launchctl
+    shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+    become: yes
+    register: launchctl_check
+    failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
+
+  - name: Install base-image for 5.5.0
+    import_role:
+      name: base-image
+    vars:
+      version: 5.5.0
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
+  - name: Install base-image for 4.14.4 (replaces 4.14.3)
+    import_role:
+      name: base-image
+    vars:
+      version: 4.14.4
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+    when: install_4144 | default(true) | bool
+
+  # --- Clear obuilder's build cache so it re-imports the new base images. ---
+  # Without this, obuilder keeps serving stale imported layers (old compiler)
+  # and every build fails on `.../home: dataset does not exist`.
+
+  - name: Find obuilder build-cache datasets to clear (exact top-level names only)
+    shell: "{{ ansible_env.HOME }}/zfs/bin/zfs list -H -o name -d 1 obuilder | grep -E 'obuilder/(result|result-tmp|state|cache-tmp)$' || true"
+    register: obuilder_cache
+    changed_when: false
+
+  - name: Show obuilder datasets that will be cleared (base-image and cache are NOT in this list)
+    debug:
+      var: obuilder_cache.stdout_lines
+
+  - name: Clear obuilder build cache (async — destroying obuilder/result can take ~1h on a full worker)
+    shell: |
+      zfs={{ ansible_env.HOME }}/zfs/bin/zfs
+      for ds in {{ obuilder_cache.stdout_lines | join(' ') }}; do
+        echo "destroying $ds"
+        $zfs destroy -r -f "$ds"
+      done
+    become: yes
+    async: 7200
+    poll: 0
+    register: obuilder_clear
+    when: obuilder_cache.stdout_lines | length > 0
+
+  - name: Wait for obuilder cache clear to finish (polls every 30s, up to 2h)
+    async_status:
+      jid: "{{ obuilder_clear.ansible_job_id }}"
+    register: obuilder_clear_status
+    until: obuilder_clear_status.finished
+    retries: 240
+    delay: 30
+    become: yes
+    when: obuilder_clear.ansible_job_id is defined
+
+  - name: Start ocluster via launchctl
+    shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.worker.plist
+    become: yes
+
+  - name: Unpause the worker
+    shell: ocluster-admin -c ~/admin.cap unpause macos-{{ ansible_architecture }} {{ inventory_hostname_short }}
+    delegate_to: 127.0.0.1
