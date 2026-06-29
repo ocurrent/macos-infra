@@ -18,6 +18,13 @@
 # the cache forces obuilder to re-import the new base images. (base-image and
 # the homebrew/opam download cache under obuilder/cache are preserved.)
 #
+# ALSO REQUIRED, off-box: after a compiler-patch bump (e.g. 4.14.3 -> 4.14.4)
+# you must re-run ocaml-ci's peeked opam variables. ocaml-ci caches the OCaml
+# patch it peeked from the old base image and pins it into every build's DEPS,
+# so until it re-peeks, macOS jobs fail with
+# `No agreement on ocaml-base-compiler: (invariant) 4.14.4 vs 4.14.2`.
+# See HOWTO-base-images.md step 6 (ocurrent/ocaml-ci#1062).
+#
 # Run one worker at a time, e.g.:
 #   ansible-playbook deploy-base-images.yml --limit i7-worker-03.macos.ci.dev
 #

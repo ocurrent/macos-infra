@@ -194,6 +194,30 @@ ocluster-admin -c ~/admin.cap show macos-arm64
 ocluster-admin -c ~/admin.cap show macos-x86_64
 ```
 
+### 6. Re-run ocaml-ci's peeked opam variables — REQUIRED after a compiler bump
+
+This is **off-box** (on ocaml-ci, not the workers) but is part of the same job
+and must not be skipped. ocaml-ci **peeks** the opam/system variables from each
+base image — including the exact OCaml patch (e.g. `ocaml-base-compiler.4.14.2`)
+— and **caches** them. The solver then bakes those cached values into the `DEPS`
+list of every build spec. When you bump a base image's patch (4.14.3 →
+**4.14.4**), the peeked values are now **stale**: ocaml-ci keeps solving against
+the old patch and pins `ocaml-base-compiler.4.14.2` into `DEPS`, while the new
+base image's switch invariant is `4.14.4`. opam can't reconcile the two and
+**every** macOS job on that version line fails:
+
+```
+[ERROR] No agreement on the version of ocaml-base-compiler:
+  - (invariant) -> ocaml-base-compiler = 4.14.4
+  - ocaml-base-compiler = 4.14.2
+```
+
+So after the images are updated you must **re-run ocaml-ci's opam-variable peek**
+(refresh the cached solve) so it picks up the new patch. This is a coordination
+step between this repo and ocaml-ci — the base-image bump and the ocaml-ci
+re-peek have to happen together, or macOS CI breaks for that compiler line.
+(Tracked in ocurrent/ocaml-ci#1062.)
+
 ## Troubleshooting
 
 ### `pause --wait` hangs forever / worker stuck on a ZFS unmount deadlock
@@ -253,6 +277,19 @@ non-destructive deploy didn't clear them. Fix = step 4 above
 (`/Users/administrator/ocluster.log`): obuilder clones an old `obuilder/result/<hash>`
 that has no `/home` child (`zfs list -r obuilder/result/<hash>` shows only the
 dataset itself, no `brew`/`home`), then fails setting the home mountpoint.
+
+### `No agreement on ocaml-base-compiler: (invariant) 4.14.4 vs 4.14.2`
+
+Symptom: a macOS job fails in `opam install` with a compiler-version conflict —
+the switch **invariant** is the new patch (e.g. 4.14.4) but the job's `DEPS`
+pins the **old** patch (e.g. 4.14.2). In the same log, `opam exec -- ocaml
+-version` correctly reports the new patch, so the base image is fine. This is
+**not** a worker problem — it is **stale peeked opam variables on ocaml-ci**
+(see step 6): ocaml-ci cached the old patch from the previous base image and is
+still solving against it. Fix is on ocaml-ci — re-run its opam-variable peek so
+it re-solves against the updated base image. Distinguish from the
+`/home: dataset does not exist` case above: there the base image / cache is
+stale on the *worker*; here the worker is correct and ocaml-ci is stale.
 
 ## Notes
 
