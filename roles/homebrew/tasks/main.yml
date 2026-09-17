@@ -5,8 +5,10 @@
     path: "{{ homebrew_prefix }}/bin/brew"
   register: homebrew_check
 
+# See roles/base-image/tasks/main.yml: Homebrew's installer refuses to run on
+# x86_64 since 2026-09-04, so pin Intel to the last commit before that.
 - name: Installing Homebrew
-  shell: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  shell: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/{{ 'f4aa1b1ca5b256954dbde0315455fb259cdfc45a' if ansible_architecture == 'x86_64' else 'HEAD' }}/install.sh)"
   when:
     - not homebrew_check.stat.exists
 

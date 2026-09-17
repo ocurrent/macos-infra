@@ -1,12 +1,12 @@
 ---
 
-# Deploy an additional OCaml 5.5.0 base image to the macOS workers and replace
-# the 4.14.3 image with 4.14.4 where that has not already been done.
+# Replace the OCaml 5.5.0 base image on the macOS workers with 5.5.1, and
+# optionally (re)build the 4.14.4 image on any worker that still lacks it.
 #
 # Does NOT wipe the ZFS pool. The base-image role keys on the short version
-# (e.g. "4.14"), so installing 4.14.4 destroys and rebuilds the existing 4.14
-# dataset (4.14.3), while 5.5.0 creates a brand-new 5.5 dataset. The default
-# image (5.4 -> macos-homebrew) is left untouched.
+# (e.g. "5.5"), so installing 5.5.1 destroys and rebuilds the existing 5.5
+# dataset (which held 5.5.0). The default image (5.4 -> macos-homebrew) is left
+# untouched.
 #
 # IMPORTANT: this playbook also clears obuilder's build cache (result /
 # result-tmp / state / cache-tmp) at the end. That step is NOT optional and is
@@ -18,12 +18,19 @@
 # the cache forces obuilder to re-import the new base images. (base-image and
 # the homebrew/opam download cache under obuilder/cache are preserved.)
 #
+# ALSO REQUIRED, off-box: after a compiler-patch bump (e.g. 5.5.0 -> 5.5.1)
+# you must re-run ocaml-ci's peeked opam variables. ocaml-ci caches the OCaml
+# patch it peeked from the old base image and pins it into every build's DEPS,
+# so until it re-peeks, macOS jobs fail with
+# `No agreement on ocaml-base-compiler: (invariant) 5.5.1 vs 5.5.0`.
+# See HOWTO-base-images.md step 6 (ocurrent/ocaml-ci#1062).
+#
 # Run one worker at a time, e.g.:
 #   ansible-playbook deploy-base-images.yml --limit i7-worker-03.macos.ci.dev
 #
-# For the two workers already carrying 4.14.4 (m1-worker-01, m1-worker-03) skip
-# the 4.14.4 rebuild:
-#   ansible-playbook deploy-base-images.yml --limit m1-worker-03.macos.ci.dev -e install_4144=false
+# All 8 workers already carry 4.14.4 (built Jun 2026), so the 4.14.4 rebuild is
+# skipped by default this round. Enable it for a worker that needs it:
+#   ansible-playbook deploy-base-images.yml --limit m1-worker-03.macos.ci.dev -e install_4144=true
 
 - hosts: all
   serial: 1
@@ -49,18 +56,18 @@
     register: launchctl_check
     failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
 
-  - name: Install base-image for 5.5.0
+  - name: Install base-image for 5.5.1
     import_role:
       name: base-image
     vars:
-      version: 5.5.0
+      version: 5.5.1
       user_name: mac1000
       zfs_pool: obuilder
       default: false
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
-  - name: Install base-image for 4.14.4 (replaces 4.14.3)
+  - name: Install base-image for 4.14.4 (opt in with -e install_4144=true)
     import_role:
       name: base-image
     vars:
@@ -70,7 +77,7 @@
       default: false
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
-    when: install_4144 | default(true) | bool
+    when: install_4144 | default(false) | bool
 
   # --- Clear obuilder's build cache so it re-imports the new base images. ---
   # Without this, obuilder keeps serving stale imported layers (old compiler)

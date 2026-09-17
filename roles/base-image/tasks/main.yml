@@ -3,6 +3,16 @@
 - set_fact:
     short_version: "{{ version.split('.')[:2] | join('.') }}"
 
+# Homebrew's installer dropped Intel on 2026-09-04 (Homebrew/install
+# e078684c, PR #1140): it now aborts with "Homebrew on macOS is only supported
+# on Apple Silicon processors!" whenever uname -m != arm64, with no override.
+# Homebrew 7.0.0 keeps Intel at Tier 3 and it still RUNS until 2027-09-01 --
+# only bootstrapping a fresh tree is blocked, which is exactly what this role
+# does. So on x86_64 pin the installer to f4aa1b1c (2026-08-04), the last
+# commit before the removal. arm64 tracks HEAD as before.
+- set_fact:
+    homebrew_install_ref: "{{ 'f4aa1b1ca5b256954dbde0315455fb259cdfc45a' if ansible_architecture == 'x86_64' else 'HEAD' }}"
+
 - name: Check for user {{ user_name }}
   shell: dscl . read /Users/{{ user_name }}
   register: user_check
@@ -122,7 +132,7 @@
       export TMPDIR=$(getconf DARWIN_USER_TEMP_DIR)
 
       # Install Homebrew
-      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/{{ homebrew_install_ref }}/install.sh)"
 
       /usr/libexec/path_helper
       export homebrew=$(brew --prefix)
