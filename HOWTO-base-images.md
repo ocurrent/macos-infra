@@ -45,12 +45,13 @@ The inventory (`hosts`) lists them as `<name>.macos.ci.dev`.
 `deploy-base-images.yml` is the **non-destructive** deploy (it does NOT recreate
 the zpool — contrast with `update-ocluster.yml`, which wipes everything). For
 one worker it: `pause --wait` → `launchctl unload` ocluster → run `base-image`
-for **5.5.0** (`default: false`) → conditionally **4.14.4** (`default: false`) →
+for **5.5.1** (`default: false`) → conditionally **4.14.4** (`default: false`) →
 `launchctl load` → `unpause`.
 
 Edit the `version:` values in the playbook for whatever you are deploying this
-round. The 4.14.4 step is gated by `install_4144` (default `true`) so you can
-skip it on workers that already have the new image.
+round. The 4.14.4 step is gated by `install_4144` (default `false`, since all
+workers already carry it) — pass `-e install_4144=true` for a worker that needs
+it rebuilt.
 
 ## Procedure
 
@@ -76,8 +77,8 @@ for w in m1-worker-01 m1-worker-02 m1-worker-03 m1-worker-04 \
 done
 ```
 
-Note which workers already carry the target patch version — you'll pass
-`-e install_4144=false` for those.
+Note which workers already carry the target patch version — the playbook skips
+the 4.14.4 rebuild unless you pass `-e install_4144=true`.
 
 > SSH to the workers goes through a jump host (`109.74.248.109`). Connecting to
 > all 8 FQDNs in parallel (e.g. a plain `ansible all ...`) overwhelms it and
