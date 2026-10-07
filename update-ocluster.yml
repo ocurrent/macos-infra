@@ -82,6 +82,17 @@
     environment:
       PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
 
+  - name: Install base-image for 5.5.1
+    import_role:
+      name: base-image
+    vars:
+      version: 5.5.1
+      user_name: mac1000
+      zfs_pool: obuilder
+      default: false
+    environment:
+      PATH: '{{ ansible_env.HOME }}/zfs/bin:{{ homebrew_prefix }}/bin:{{ ansible_env.PATH }}'
+
   - name: Install busybox
     import_role:
       name: busybox
