@@ -31,6 +31,14 @@
   args:
     chdir: "{{ ansible_env.HOME }}/ocluster"
 
+# The switch is not guaranteed to already satisfy ocluster's deps -- upstream
+# adds new ones (e.g. prometheus-lwt), and then `dune build` fails with
+# `Library "prometheus-lwt" not found`. Resolve them from the checkout.
+- name: Install ocluster build dependencies
+  shell: eval $(opam env) && opam install -y --deps-only --confirm-level=unsafe-yes .
+  args:
+    chdir: "{{ ansible_env.HOME }}/ocluster"
+
 - name: Dune build
   shell: eval $(opam env) && dune build --release
   args:
