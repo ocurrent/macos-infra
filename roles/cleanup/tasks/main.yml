@@ -1,0 +1,26 @@
+---
+
+- name: Create cleanup script
+  template:
+    src: cleanup.sh
+    dest: "{{ ansible_env.HOME }}/cleanup.sh"
+    mode: '0755'
+
+- name: Create plist service file
+  template:
+    src: com.tarides.ocluster.cleanup.plist
+    dest: "/Library/LaunchDaemons/com.tarides.ocluster.cleanup.plist"
+    owner: root
+    group: wheel
+    mode: '0644'
+  become: yes
+
+- name: Stop cleanup process via launchctl
+  shell: launchctl unload /Library/LaunchDaemons/com.tarides.ocluster.cleanup.plist
+  become: yes
+  register: launchctl_check
+  failed_when: not ( launchctl_check.rc == 134 or launchctl_check.rc == 0 )
+
+- name: Start cleanup process via launchctl
+  shell: launchctl load /Library/LaunchDaemons/com.tarides.ocluster.cleanup.plist
+  become: yes
