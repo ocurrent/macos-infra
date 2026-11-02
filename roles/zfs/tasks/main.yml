@@ -1,29 +1,101 @@
 ---
 
-# ZFS always installs to /usr/local regardless of architecture
+# obuilder runs the zfs/zpool tools as an unprivileged user and the worker plist
+# puts ~/zfs/bin on PATH, so we keep a relocated copy of the toolset under $HOME.
+#
+# The two fleets are not in the same shape. On Intel /usr/local/zfs is gone and
+# ~/zfs is the only copy -- self-contained, because the relocation below did run
+# there. On arm64 /usr/local/zfs is still present and, before the relocation was
+# fixed, ~/zfs stayed bound to it. Both are valid, so a missing /usr/local/zfs is
+# treated as "nothing to copy from" rather than an error, as long as ~/zfs works.
 
-- name: Check if ZFS is installed in {{ ansible_env.HOME }}/zfs exists
-  stat:
-    path: "{{ ansible_env.HOME }}/zfs/bin/zfs"
-  register: zfs_check
+- name: Read the ZFS version installed in /usr/local, if present
+  shell: |
+    if [ -x /usr/local/zfs/bin/zfs ]; then
+      /usr/local/zfs/bin/zfs version 2>/dev/null | head -1
+    fi
+  register: zfs_system
+  changed_when: false
+  check_mode: false
+
+- name: Read the ZFS version currently under {{ ansible_env.HOME }}/zfs
+  shell: "{{ ansible_env.HOME }}/zfs/bin/zfs version 2>/dev/null | head -1"
+  register: zfs_home
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: Record what we found
+  set_fact:
+    zfs_system_version: "{{ zfs_system.stdout | trim }}"
+    zfs_home_version: "{{ (zfs_home.stdout | trim) if zfs_home.rc == 0 else '' }}"
+
+- name: Fail if neither /usr/local/zfs nor {{ ansible_env.HOME }}/zfs is usable
+  assert:
+    that: zfs_system_version != '' or zfs_home_version != ''
+    fail_msg: >-
+      Neither /usr/local/zfs nor {{ ansible_env.HOME }}/zfs provides a working
+      zfs binary on {{ inventory_hostname }}. Install the OpenZFS on OS X package
+      for this macOS release before running this role.
+
+# Refresh when there is a source to copy from and ~/zfs is absent, won't run, or
+# is a different version.
+#
+# This was previously guarded on the mere existence of ~/zfs/bin/zfs, which made
+# the copy a one-shot: upgrading the OpenZFS package replaced /usr/local/zfs and
+# left the old copy behind. Combined with the arm64 relocation bug noted below,
+# every ~/zfs binary then died with
+#   dyld: Library not loaded: /usr/local/zfs/lib/libzfs.4.dylib
+# and ocluster-worker crash-looped on `zfs create obuilder/state`. Comparing
+# versions makes the role safe to re-run across an upgrade.
+- name: Decide whether {{ ansible_env.HOME }}/zfs needs refreshing
+  set_fact:
+    zfs_needs_refresh: "{{ zfs_system_version != '' and zfs_home_version != zfs_system_version }}"
+
+- name: Remove the stale {{ ansible_env.HOME }}/zfs copy
+  file:
+    path: "{{ ansible_env.HOME }}/zfs"
+    state: absent
+  when: zfs_needs_refresh
 
 - name: Copy ZFS files from /usr/local/zfs
   copy:
-    src: "/usr/local/zfs"
+    src: /usr/local/zfs
     remote_src: true
     dest: "{{ ansible_env.HOME }}/"
-  when:
-    - not zfs_check.stat.exists
+  when: zfs_needs_refresh
 
-- name: Patch ZFS exectables to reflect new location
+# Repoint the copied binaries at their own libs so ~/zfs does not depend on
+# /usr/local/zfs at runtime. This used to substitute homebrew_prefix, which is
+# only /usr/local on Intel -- on arm64 (/opt/homebrew) nothing ever matched and
+# the copy silently stayed bound to the system libs, which is what turned the
+# 2.4.1 upgrade into three dead workers. Match the ZFS prefix directly: correct
+# on both architectures, and it no longer rewrites unrelated /usr/local
+# references on Intel.
+- name: Patch ZFS executables to reflect new location
   shell: |
-    for dir in {{ ansible_env.HOME }}/zfs/lib/*.dylib {{ ansible_env.HOME }}/zfs/bin/* ; do
-    for lib in `otool -L $dir | grep "/usr/local" | cut -f 1 -d" " | cut -f 2` ; do
-    new=`echo $lib | sed "s#{{ homebrew_prefix }}#{{ ansible_env.HOME }}#g"` ;
-    install_name_tool -change $lib $new $dir ;
-    done ;
+    set -e
+    for f in {{ ansible_env.HOME }}/zfs/lib/*.dylib {{ ansible_env.HOME }}/zfs/bin/* ; do
+      [ -f "$f" ] || continue
+      for lib in $(otool -L "$f" | awk '$1 ~ /^\/usr\/local\/zfs\// {print $1}') ; do
+        new=$(printf '%s' "$lib" | sed "s#^/usr/local/zfs#{{ ansible_env.HOME }}/zfs#")
+        install_name_tool -change "$lib" "$new" "$f"
+      done
     done
-    export PATH=$PATH:~/zfs/bin
-  when:
-    - not zfs_check.stat.exists
+  when: zfs_needs_refresh
 
+- name: Re-read the ZFS version under {{ ansible_env.HOME }}/zfs
+  shell: "{{ ansible_env.HOME }}/zfs/bin/zfs version 2>/dev/null | head -1"
+  register: zfs_home_after
+  changed_when: false
+  check_mode: false
+
+- name: Confirm {{ ansible_env.HOME }}/zfs runs and matches /usr/local/zfs where that exists
+  assert:
+    that:
+      - (zfs_home_after.stdout | trim) != ''
+      - zfs_system_version == '' or (zfs_home_after.stdout | trim) == zfs_system_version
+    fail_msg: >-
+      {{ ansible_env.HOME }}/zfs reports '{{ zfs_home_after.stdout | trim }}'
+      but /usr/local/zfs is '{{ zfs_system_version }}'
+    success_msg: "{{ ansible_env.HOME }}/zfs is {{ zfs_home_after.stdout | trim }}"
