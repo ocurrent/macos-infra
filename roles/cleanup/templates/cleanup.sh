@@ -20,14 +20,19 @@ SELF_LOG=$HOME_DIR/cleanup.log
 before=$(df -g / | awk 'NR==2 {print $4}')
 
 # Workers run --capacity=1, so at most one build is ever live. Anything here
-# untouched for 12 h is abandoned -- no macOS CI job runs remotely that long.
+# untouched for 6 h is abandoned -- no macOS CI job runs remotely that long.
+#
+# 6 h rather than 12 h because the accrual rate is roughly one ~3.8 GB tree per
+# hour under load. At 12 h that is ~46 GB resident, which on i7-worker-04's
+# 116 GB system disk left only ~13 GB spare on 2026-10-27 -- thinner than the
+# margin that produced the 2026-10-17 ENOSPC. 6 h caps it near 23 GB.
 # Leave powerlog, lofs.test and other system entries alone.
 found=$(find /private/tmp -maxdepth 1 -mindepth 1 \
             \( -name 's-*' -o -name 'homebrew-*' \) \
-            -mmin +720 2>/dev/null | wc -l | tr -d ' ')
+            -mmin +360 2>/dev/null | wc -l | tr -d ' ')
 find /private/tmp -maxdepth 1 -mindepth 1 \
      \( -name 's-*' -o -name 'homebrew-*' \) \
-     -mmin +720 -print0 2>/dev/null | xargs -0 rm -rf 2>/dev/null
+     -mmin +360 -print0 2>/dev/null | xargs -0 rm -rf 2>/dev/null
 
 # ocluster.log is launchd's StandardOutPath/StandardErrorPath, so the worker
 # holds the fd open for the life of the process: renaming it would leave the
