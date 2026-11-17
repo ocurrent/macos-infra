@@ -80,11 +80,10 @@ done
 Note which workers already carry the target patch version — the playbook skips
 the 4.14.4 rebuild unless you pass `-e install_4144=true`.
 
-> SSH to the workers goes through a jump host (`109.74.248.109`). Connecting to
-> all 8 FQDNs in parallel (e.g. a plain `ansible all ...`) overwhelms it and
-> times out with "banner exchange" errors. Use the short names (`ssh m1-worker-01`,
-> which the `~/.ssh/config` `??-worker-??` rule proxies) and work **one worker at
-> a time**.
+> We ssh to the workers by name (`ssh m1-worker-01`); `~/.ssh/config` handles how
+> they are reached. Connecting to all of them in parallel (e.g. a plain
+> `ansible all ...`) can time out with "banner exchange" errors, so work **one
+> worker at a time**.
 
 ### 2. Set the versions in the playbook
 
@@ -113,8 +112,7 @@ Each worker takes roughly:
   `obuilder/result`, which on a long-running worker is 100+ GB and can take
   **~1 hour** (~2–3 GB/min, per-snapshot `.zfs/snapshot` unmounts). So budget
   roughly 1–1.5 h of worker downtime per worker. The playbook runs the destroy
-  asynchronously and polls, so a flaky SSH connection through the jump host
-  won't abort it.
+  asynchronously and polls, so a flaky SSH connection won't abort it.
 
 `pause --wait` only waits for the **one in-flight job** to finish (not the whole
 queue), then the build starts. A clean run ends with `failed=0` in the PLAY
@@ -134,7 +132,7 @@ done
 ```
 
 You can safely run **two** deploys concurrently (e.g. recover one worker while
-another loop runs) — just don't fan out to all 8 at once (jump host).
+another loop runs) — just don't fan out to all of them at once.
 
 ### 4. obuilder cache clear (automatic — but understand it)
 
@@ -176,7 +174,7 @@ playbooks run it asynchronously and poll for completion. If you ever do it by
 hand over SSH, run it detached/in the background — a foreground shell with a
 short timeout gets killed mid-destroy and leaves the worker stopped with
 `result` half-gone (just re-run to finish). You can clear several workers in
-parallel (one brief SSH each won't stress the jump host).
+parallel (one brief SSH each is fine).
 
 ### 5. Verify
 
